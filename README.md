@@ -3,6 +3,7 @@
 ระบบจัดการสกอร์บอร์ดวอลเลย์บอลแบบเรียลไทม์ (Real-time Volleyball Scoreboard System)
 
 VolleyScore คือเว็บแอปพลิเคชันสำหรับบริหารจัดการการแข่งขันวอลเลย์บอล แสดงผลสกอร์บอร์ด และควบคุมคะแนนผ่านระบบเครือข่าย รองรับการใช้งานร่วมกับโปรแกรมถ่ายทอดสด (OBS/vMix) ผ่าน Browser Source
+
 ![VolleyScore Thumbnail](https://github.com/pramuan/volleyscore/blob/main/thumbnail.png?raw=true)
 
 ## คุณสมบัติเด่น (Key Features)
