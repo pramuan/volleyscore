@@ -772,25 +772,35 @@ function Management() {
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.backgroundImage ? 'text-slate-500' : 'text-transparent'}`}
+                                            className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${newMatchData.backgroundImage ? 'text-slate-500' : 'text-transparent'}`}
                                             onChange={e => setNewMatchData({ ...newMatchData, backgroundImage: e.target.files[0] })}
                                         />
                                     </div>
                                 </div>
-
-                                <div className="pt-2">
+                                <div className="mt-8 pt-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white pb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreateModal(false)}
+                                        className="px-4 py-2 text-gray-700 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
                                     <button
                                         type="submit"
-                                        className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-500/20"
+                                        className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md active:scale-95"
                                     >
-                                        {editingMatchId ? 'Save Changes' : 'Start Match'}
+                                        {editingMatchId ? 'Save Changes' : 'Create Match'}
                                     </button>
                                 </div>
                             </form>
                         </div >
                     </div >
+
                 )
             }
+            <footer className="fixed bottom-0 left-0 w-full py-4 text-center text-slate-400 text-xs font-medium bg-slate-50 z-50">
+                Powered by 3PT Live Streaming
+            </footer>
         </div >
     );
 }
