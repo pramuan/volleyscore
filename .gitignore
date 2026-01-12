@@ -12,3 +12,9 @@ build/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# PocketBase runtime data
+pocketbase/pb_data/
+*.db
+*.db-shm
+*.db-wal

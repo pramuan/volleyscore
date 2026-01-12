@@ -37,7 +37,7 @@ function Login() {
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
                 <div className="bg-blue-600 p-8 text-center">
-                    <div className="bg-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <img src={volleyballIcon} alt="Logo" className="w-10 h-10 object-contain" />
                     </div>
                     <h1 className="text-white text-2xl font-bold">VolleyScore Management</h1>
