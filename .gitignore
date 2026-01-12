@@ -1,0 +1,14 @@
+# Env / Secret
+.env
+.env.*
+*.key
+
+# Node
+node_modules/
+dist/
+build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -1,0 +1,26 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Management from './views/Management';
+import Controller from './views/Controller';
+import Display from './views/Display';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/management" replace />} />
+        <Route path="/management" element={<Management />} />
+
+        {/* Helper route to catch /controller without matchId */}
+        <Route path="/controller" element={<div className="p-4">Please select a match from Management dashboard.</div>} />
+        <Route path="/controller/:matchId" element={<Controller />} />
+
+        {/* Helper route to catch /display without matchId */}
+        <Route path="/display" element={<div className="p-4">Please select a match from Management dashboard.</div>} />
+        <Route path="/display/:matchId" element={<Display />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
