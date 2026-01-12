@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Copy, Plus, Monitor, Trophy, Edit, Trash2 } from 'lucide-react';
+import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon } from 'lucide-react';
 import PocketBase from 'pocketbase';
 
 // Initialize PocketBase
@@ -18,6 +18,7 @@ function Management() {
         bestOf: '3',
         setPoints: '25'
     });
+    const [expandedMatchId, setExpandedMatchId] = useState(null);
     const navigate = useNavigate();
 
     // Fetch matches from PocketBase
@@ -313,6 +314,73 @@ function Management() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Broadcast Links Section */}
+                            <div className="mt-6 border-t border-slate-100 pt-4">
+                                <button
+                                    onClick={() => setExpandedMatchId(expandedMatchId === match.id ? null : match.id)}
+                                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+                                >
+                                    {expandedMatchId === match.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    Broadcast Links (OBS/vMix)
+                                </button>
+
+                                {expandedMatchId === match.id && (
+                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {/* Home Team Links */}
+                                        <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
+                                            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                Home Team ({match.homeTeam})
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {[
+                                                    { label: 'Team Name', path: `/display/${match.id}/home/name` },
+                                                    { label: 'Score', path: `/display/${match.id}/home/score` },
+                                                    { label: 'Sets Won', path: `/display/${match.id}/home/sets` },
+                                                ].map((link, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-blue-100 shadow-sm">
+                                                        <span className="text-sm font-medium text-slate-600">{link.label}</span>
+                                                        <button
+                                                            onClick={() => copyLink(link.path)}
+                                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-md transition-colors"
+                                                            title="Copy Link"
+                                                        >
+                                                            <LinkIcon size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Away Team Links */}
+                                        <div className="bg-red-50/50 rounded-xl p-4 border border-red-100">
+                                            <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                Away Team ({match.awayTeam})
+                                            </h4>
+                                            <div className="space-y-2">
+                                                {[
+                                                    { label: 'Team Name', path: `/display/${match.id}/away/name` },
+                                                    { label: 'Score', path: `/display/${match.id}/away/score` },
+                                                    { label: 'Sets Won', path: `/display/${match.id}/away/sets` },
+                                                ].map((link, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-red-100 shadow-sm">
+                                                        <span className="text-sm font-medium text-slate-600">{link.label}</span>
+                                                        <button
+                                                            onClick={() => copyLink(link.path)}
+                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                                                            title="Copy Link"
+                                                        >
+                                                            <LinkIcon size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

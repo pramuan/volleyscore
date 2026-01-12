@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Management from './views/Management';
 import Controller from './views/Controller';
 import Display from './views/Display';
+import PartialDisplay from './views/PartialDisplay';
 
 function App() {
   return (
@@ -18,6 +19,9 @@ function App() {
         {/* Helper route to catch /display without matchId */}
         <Route path="/display" element={<div className="p-4">Please select a match from Management dashboard.</div>} />
         <Route path="/display/:matchId" element={<Display />} />
+
+        {/* Partial Display Routes for OBS/vMix */}
+        <Route path="/display/:matchId/:team/:category" element={<PartialDisplay />} />
       </Routes>
     </BrowserRouter>
   );
