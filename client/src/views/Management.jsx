@@ -410,15 +410,15 @@ function Management() {
                                             <div className="h-px bg-slate-200 flex-1"></div>
                                         </span>
                                         <div className="flex items-stretch gap-1">
-                                            <Link
-                                                to={`/controller/${match.id}`}
+                                            <a
+                                                href={`http://${serverIp ? serverIp : window.location.hostname}:${window.location.port}/controller/${match.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="h-10 flex-1 bg-slate-50 text-slate-700 font-bold text-sm px-3 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow border border-slate-200 transition-all flex items-center justify-center gap-2"
                                                 title="Open Controller"
                                             >
                                                 <Monitor size={16} /> Open
-                                            </Link>
+                                            </a>
                                             <button
                                                 onClick={() => copyLink(`/controller/${match.id}`)}
                                                 className="h-10 bg-slate-50 text-slate-500 px-3 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow border border-slate-200 transition-all font-bold text-sm"
@@ -436,15 +436,15 @@ function Management() {
                                             <div className="h-px bg-slate-200 flex-1"></div>
                                         </span>
                                         <div className="flex items-stretch gap-1">
-                                            <Link
-                                                to={`/display/${match.id}`}
+                                            <a
+                                                href={`http://${serverIp ? serverIp : window.location.hostname}:${window.location.port}/display/${match.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="h-10 flex-1 bg-slate-50 text-slate-700 font-bold text-sm px-3 rounded-lg hover:bg-white hover:text-purple-600 hover:shadow border border-slate-200 transition-all flex items-center justify-center gap-2"
                                                 title="Open Display"
                                             >
                                                 <Monitor size={16} /> Open
-                                            </Link>
+                                            </a>
                                             <button
                                                 onClick={() => copyLink(`/display/${match.id}`)}
                                                 className="h-10 bg-slate-50 text-slate-500 px-3 rounded-lg hover:bg-white hover:text-purple-600 hover:shadow border border-slate-200 transition-all font-bold text-sm"
