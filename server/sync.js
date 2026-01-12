@@ -1,3 +1,4 @@
+require('dotenv').config();
 const PocketBase = require('pocketbase/cjs'); // CommonJS import for Node
 const eventsource = require('eventsource');
 global.EventSource = eventsource.EventSource;
@@ -9,9 +10,28 @@ const PB_URL = 'http://127.0.0.1:8090';
 class VolleySync {
     constructor() {
         this.pb = new PocketBase(PB_URL);
-        // Authentication might be needed if rules are strict. 
-        // For now assuming public read/write or local admin.
         this.cache = new Map();
+        this.isAuthenticated = false;
+    }
+
+    async authenticate() {
+        const email = process.env.PB_ADMIN_EMAIL;
+        const password = process.env.PB_ADMIN_PASSWORD;
+
+        if (!email || !password) {
+            console.warn('Sync: Missing PB_ADMIN_EMAIL or PB_ADMIN_PASSWORD in .env');
+            return false;
+        }
+
+        try {
+            await this.pb.admins.authWithPassword(email, password);
+            this.isAuthenticated = true;
+            console.log('Sync: Server authenticated successfully as Admin');
+            return true;
+        } catch (err) {
+            console.error('Sync: Authentication failed!', err.message);
+            return false;
+        }
     }
 
     async hydrateMatch(matchId) {

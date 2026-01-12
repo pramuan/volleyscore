@@ -48,27 +48,32 @@ app.post('/api/matches', (req, res) => {
 
 // Setup PocketBase Sync (Run once)
 const sync = require('./sync');
-// Subscribe to PocketBase changes (e.g., from Manager Dashboard)
-sync.subscribeToChanges((record) => {
-    // Update in-memory state
-    const updatedMatch = state.updateMatch(record.id, {
-        is_live: record.is_live,
-        collectionId: record.collectionId,
-        name: record.name,
-        homeTeam: record.homeTeam,
-        awayTeam: record.awayTeam,
-        homeLogo: record.homeLogo,
-        awayLogo: record.awayLogo,
-        backgroundImage: record.backgroundImage,
-        config: record.config
-    });
+// Perform authentication for persistence
+(async () => {
+    await sync.authenticate();
+    // Subscribe to PocketBase changes (e.g., from Manager Dashboard)
+    sync.subscribeToChanges((record) => {
+        // Update in-memory state
+        const updatedMatch = state.updateMatch(record.id, {
+            is_live: record.is_live,
+            collectionId: record.collectionId,
+            name: record.name,
+            homeTeam: record.homeTeam,
+            awayTeam: record.awayTeam,
+            homeLogo: record.homeLogo,
+            awayLogo: record.awayLogo,
+            backgroundImage: record.backgroundImage,
+            config: record.config
+        });
 
-    if (updatedMatch) {
-        console.log(`Broadcasting external update for ${record.id}`);
-        io.to(record.id).emit('match_update', updatedMatch);
-        io.emit('matches_updated', state.getAllMatches());
-    }
-});
+        if (updatedMatch) {
+            console.log(`Broadcasting external update for ${record.id}`);
+            io.to(record.id).emit('match_update', updatedMatch);
+            io.emit('matches_updated', state.getAllMatches());
+        }
+    });
+})();
+
 
 // Socket.io Handlers
 io.on('connection', (socket) => {

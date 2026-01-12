@@ -102,7 +102,11 @@ class VolleyState {
     const match = this.getMatch(matchId);
     if (!match) return null;
 
-    if (match.winner) return match; // Match is already over
+    // Prevent any score updates if match is already over
+    if (match.winner) {
+      console.warn(`State: Attempted to update score for completed match ${matchId}`);
+      return match;
+    }
 
     this.saveSnapshot(match); // Save state before change
 
@@ -129,6 +133,12 @@ class VolleyState {
   startNewSet(matchId) {
     const match = this.getMatch(matchId);
     if (!match) return null;
+
+    // Prevent starting a new set if the match is already decided
+    if (match.winner) {
+      console.warn(`State: Attempted to start new set for completed match ${matchId}`);
+      return match;
+    }
 
     this.saveSnapshot(match); // Save state before change
 
@@ -184,6 +194,10 @@ class VolleyState {
   setServingTeam(matchId, team) {
     const match = this.getMatch(matchId);
     if (!match) return null;
+
+    // Prevent serving changes if match is over
+    if (match.winner) return match;
+
     this.saveSnapshot(match); // Save state before change
     match.servingTeam = team;
     match.lastActive = Date.now();

@@ -486,14 +486,16 @@ function Controller() {
                                         <div className="grid grid-cols-2 gap-4 w-full">
                                             <button
                                                 onClick={() => updateScore(teamKey, 1)}
+                                                disabled={match.winner}
                                                 style={{ backgroundColor: color }}
-                                                className="h-32 hover:brightness-110 active:scale-95 transition-all rounded-2xl shadow-lg shadow-black/10 flex items-center justify-center text-white"
+                                                className={`h-32 active:scale-95 transition-all rounded-2xl shadow-lg shadow-black/10 flex items-center justify-center text-white ${match.winner ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:brightness-110'}`}
                                             >
                                                 <Plus size={56} strokeWidth={3} />
                                             </button>
                                             <button
                                                 onClick={() => updateScore(teamKey, -1)}
-                                                className="h-32 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500"
+                                                disabled={match.winner}
+                                                className={`h-32 bg-slate-100 active:scale-95 transition-all rounded-xl flex items-center justify-center text-slate-400 ${match.winner ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200 hover:text-red-500'}`}
                                             >
                                                 <Minus size={40} strokeWidth={3} />
                                             </button>
@@ -558,40 +560,54 @@ function Controller() {
             </main>
 
             {/* Footer / Global Actions */}
-            <footer className="p-4 lg:p-8 flex justify-center gap-4 max-w-lg mx-auto w-full">
+            <footer className={`p-4 lg:p-8 grid gap-2 max-w-5xl mx-auto w-full ${!match.winner ? 'grid-cols-4' : 'grid-cols-3'}`}>
+                {!match.winner ? (
+                    <>
+                        <button
+                            className={`w-full py-3 px-1 rounded-xl font-bold active:scale-95 transition-all shadow-sm whitespace-nowrap flex items-center justify-center gap-1.5 ${anySetWon ? 'bg-green-600 text-white hover:bg-green-700 animate-bounce' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
+                            onClick={startNewSet}
+                        >
+                            {anySetWon ? <Check size={16} className="shrink-0" /> : <StepForward size={16} className="shrink-0" />}
+                            <span className="text-[10px] sm:text-xs lg:text-sm">{anySetWon ? 'Confirm' : 'New Set'}</span>
+                        </button>
+                        <button
+                            className={`w-full py-3 px-1 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${match.timeout?.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                            onClick={toggleTimeout}
+                        >
+                            {match.timeout?.active ? <X size={16} className="shrink-0" /> : <Timer size={16} className="shrink-0" />}
+                            <span className="text-[10px] sm:text-xs lg:text-sm">{match.timeout?.active ? 'Stop' : 'Timeout'}</span>
+                        </button>
+                        <button
+                            className="w-full py-3 px-1 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                            onClick={handleUndo}
+                        >
+                            <Undo2 size={16} className="shrink-0" />
+                            <span className="text-[10px] sm:text-xs lg:text-sm">Undo</span>
+                        </button>
+                    </>
+                ) : (
+                    <div className="w-full flex items-center justify-center bg-green-600 text-white py-3 px-1 rounded-xl shadow-lg gap-1.5 animate-in fade-in zoom-in duration-500">
+                        <Trophy size={16} className="shrink-0" />
+                        <span className="text-[10px] sm:text-xs lg:text-sm font-bold truncate">
+                            {match.winner === 'home' ? match.homeTeam : match.awayTeam}
+                        </span>
+                    </div>
+                )}
+
                 <button
-                    className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-all shadow-sm whitespace-nowrap flex items-center justify-center gap-2 ${anySetWon ? 'bg-green-600 text-white hover:bg-green-700 animate-bounce' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
-                    onClick={startNewSet}
-                >
-                    {anySetWon ? <Check size={20} /> : <StepForward size={20} />}
-                    {anySetWon ? 'Confirm Set' : 'New Set'}
-                </button>
-                <button
-                    className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-2 ${match.timeout?.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
-                    onClick={toggleTimeout}
-                >
-                    {match.timeout?.active ? <X size={20} /> : <Timer size={20} />}
-                    {match.timeout?.active ? 'Stop' : 'Timeout'}
-                </button>
-                <button
-                    className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
-                    onClick={handleUndo}
-                >
-                    <Undo2 size={20} /> Undo
-                </button>
-                <button
-                    className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 px-1 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
                     onClick={resetMatch}
                 >
-                    <RotateCcw size={18} /> Reset
+                    <RotateCcw size={16} className="shrink-0" />
+                    <span className="text-[10px] sm:text-xs lg:text-sm">Reset</span>
                 </button>
                 {match.winner && (
                     <button
-                        className={`py-3 px-4 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${match.showFinalResult ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                        className={`w-full py-3 px-1 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${match.showFinalResult ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
                         onClick={toggleFinalResult}
                     >
-                        <Award size={18} />
-                        {match.showFinalResult ? 'Scoreboard' : 'Final Result'}
+                        <Award size={16} className="shrink-0" />
+                        <span className="text-[10px] sm:text-xs lg:text-sm">{match.showFinalResult ? 'Scoreboard' : 'Final Result'}</span>
                     </button>
                 )}
             </footer>

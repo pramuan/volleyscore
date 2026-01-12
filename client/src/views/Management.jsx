@@ -89,6 +89,7 @@ function Management() {
                 formData.append('name', newMatchData.name);
                 formData.append('homeTeam', newMatchData.homeTeam);
                 formData.append('awayTeam', newMatchData.awayTeam);
+                formData.append('matchDate', newMatchData.matchDate || '');
 
                 // Config JSON needs to be stringified if sent via FormData
                 const configData = {
@@ -132,6 +133,7 @@ function Management() {
                 formData.append('name', newMatchData.name);
                 formData.append('homeTeam', newMatchData.homeTeam);
                 formData.append('awayTeam', newMatchData.awayTeam);
+                formData.append('matchDate', newMatchData.matchDate || new Date().toISOString().split('T')[0]);
                 formData.append('is_live', 'false'); // FormData sends strings
 
                 // Enforce PIN
@@ -211,7 +213,8 @@ function Management() {
             homeLogo: null,
             awayLogo: null,
             pin: randomPin,
-            courtId: '1'
+            courtId: '1',
+            matchDate: new Date().toISOString().split('T')[0]  // Default to today (YYYY-MM-DD)
         });
         setShowCreateModal(true);
     };
@@ -234,7 +237,8 @@ function Management() {
             homeLogo: match.homeLogo, // Keep existing filename or obj
             awayLogo: match.awayLogo,
             pin: match.pin || '',
-            courtId: match.config?.courtId || '1'
+            courtId: match.config?.courtId || '1',
+            matchDate: match.matchDate || match.created?.split(' ')[0] || new Date().toISOString().split('T')[0]
         });
         setShowCreateModal(true);
     };
@@ -324,7 +328,7 @@ function Management() {
                 return [
                     m.id,
                     `"${m.name.replace(/"/g, '""')}"`, // Escape quotes
-                    new Date(m.created).toLocaleString(),
+                    m.matchDate || new Date(m.created).toISOString().split('T')[0],  // YYYY-MM-DD format
                     `"${m.homeTeam.replace(/"/g, '""')}"`,
                     `"${m.awayTeam.replace(/"/g, '""')}"`,
                     m.config?.courtId || "1",
@@ -698,6 +702,16 @@ function Management() {
                                         placeholder="Match Name"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Match Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                        value={newMatchData.matchDate || ''}
+                                        onChange={e => setNewMatchData({ ...newMatchData, matchDate: e.target.value })}
+                                    />
+                                </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-1">
                                         {/* Display Existing Home Logo if available and not being removed/replaced */}
@@ -742,28 +756,37 @@ function Management() {
                                             value={newMatchData.homeTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })}
                                         />
-                                        <div className="flex flex-col gap-2 mt-2">
-                                            <label className="block text-xs font-medium text-gray-500">Team Logo</label>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.homeLogo ? 'text-slate-500' : 'text-transparent'}`}
-                                                onChange={e => setNewMatchData({ ...newMatchData, homeLogo: e.target.files[0] })}
-                                            />
-                                        </div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Team Color</label>
-                                        <div className="relative">
-                                            <input
-                                                type="color"
-                                                value={newMatchData.homeColor || '#1d4ed8'}
-                                                onChange={e => setNewMatchData({ ...newMatchData, homeColor: e.target.value })}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                            />
-                                            <div
-                                                className="w-full text-xs py-2 px-4 rounded-full border-0 font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-start gap-2"
-                                            >
-                                                <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: newMatchData.homeColor || '#1d4ed8' }}></span>
-                                                <span>{newMatchData.homeColor ? newMatchData.homeColor : 'Select Color'}</span>
+                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="block text-sm font-medium text-gray-700">Logo</label>
+                                                <div className="relative h-[32px]">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        onChange={e => setNewMatchData({ ...newMatchData, homeLogo: e.target.files[0] })}
+                                                    />
+                                                    <div className="w-full h-full text-[10px] px-3 rounded-lg border border-slate-200 font-bold bg-slate-50 text-slate-700 flex items-center justify-center overflow-hidden pointer-events-none">
+                                                        <span className="truncate">{newMatchData.homeLogo instanceof File ? newMatchData.homeLogo.name : (newMatchData.homeLogo === 'DELETE' ? 'None' : 'Choose file')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="block text-sm font-medium text-gray-700">Color</label>
+                                                <div className="relative h-[32px]">
+                                                    <input
+                                                        type="color"
+                                                        value={newMatchData.homeColor || '#1d4ed8'}
+                                                        onChange={e => setNewMatchData({ ...newMatchData, homeColor: e.target.value })}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div
+                                                        className="w-full h-full text-[10px] px-3 rounded-lg border border-slate-200 font-bold bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <span className="w-3 h-3 rounded-full border border-black/10 flex-shrink-0" style={{ backgroundColor: newMatchData.homeColor || '#1d4ed8' }}></span>
+                                                        <span className="uppercase text-slate-500">{newMatchData.homeColor || '#1D4ED8'}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -811,28 +834,37 @@ function Management() {
                                             value={newMatchData.awayTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })}
                                         />
-                                        <div className="flex flex-col gap-2 mt-2">
-                                            <label className="block text-xs font-medium text-gray-500">Team Logo</label>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.awayLogo ? 'text-slate-500' : 'text-transparent'}`}
-                                                onChange={e => setNewMatchData({ ...newMatchData, awayLogo: e.target.files[0] })}
-                                            />
-                                        </div>
-                                        <label className="block text-xs font-medium text-gray-500 mb-1">Team Color</label>
-                                        <div className="relative">
-                                            <input
-                                                type="color"
-                                                value={newMatchData.awayColor || '#b91c1c'}
-                                                onChange={e => setNewMatchData({ ...newMatchData, awayColor: e.target.value })}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                            />
-                                            <div
-                                                className="w-full text-xs py-2 px-4 rounded-full border-0 font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-start gap-2"
-                                            >
-                                                <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: newMatchData.awayColor || '#b91c1c' }}></span>
-                                                <span>{newMatchData.awayColor ? newMatchData.awayColor : 'Select Color'}</span>
+                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="block text-sm font-medium text-gray-700">Logo</label>
+                                                <div className="relative h-[32px]">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        onChange={e => setNewMatchData({ ...newMatchData, awayLogo: e.target.files[0] })}
+                                                    />
+                                                    <div className="w-full h-full text-[10px] px-3 rounded-lg border border-slate-200 font-bold bg-slate-50 text-slate-700 flex items-center justify-center overflow-hidden pointer-events-none">
+                                                        <span className="truncate">{newMatchData.awayLogo instanceof File ? newMatchData.awayLogo.name : (newMatchData.awayLogo === 'DELETE' ? 'None' : 'Choose file')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="block text-sm font-medium text-gray-700">Color</label>
+                                                <div className="relative h-[32px]">
+                                                    <input
+                                                        type="color"
+                                                        value={newMatchData.awayColor || '#b91c1c'}
+                                                        onChange={e => setNewMatchData({ ...newMatchData, awayColor: e.target.value })}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    <div
+                                                        className="w-full h-full text-[10px] px-3 rounded-lg border border-slate-200 font-bold bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <span className="w-3 h-3 rounded-full border border-black/10 flex-shrink-0" style={{ backgroundColor: newMatchData.awayColor || '#b91c1c' }}></span>
+                                                        <span className="uppercase text-slate-500">{newMatchData.awayColor || '#B91C1C'}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
