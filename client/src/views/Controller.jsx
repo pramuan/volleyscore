@@ -255,6 +255,20 @@ function Controller() {
                                             if (prevInput) prevInput.focus();
                                         }
                                     }}
+                                    onPaste={(e) => {
+                                        e.preventDefault();
+                                        const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+                                        if (pastedData) {
+                                            setPinInput(pastedData);
+                                            setIsPinError(false);
+                                            // Focus the last filled input or the last input if full
+                                            const focusIndex = Math.min(pastedData.length, 3);
+                                            const inputs = e.target.parentElement.children;
+                                            if (inputs[focusIndex]) {
+                                                inputs[focusIndex].focus();
+                                            }
+                                        }
+                                    }}
                                     className={`w-16 h-16 text-center text-2xl font-bold border-2 rounded-xl focus:ring-4 focus:outline-none transition-all ${isPinError
                                         ? 'border-red-500 focus:ring-red-100 bg-red-50'
                                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'
