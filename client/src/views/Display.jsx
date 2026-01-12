@@ -8,6 +8,13 @@ function Display() {
     const { matchId } = useParams();
     const [match, setMatch] = useState(null);
 
+    const getFileUrl = (record, filename) => {
+        if (!record || !filename) return null;
+        // Fallback to specific collection ID string if record.collectionId is missing (e.g. from older state)
+        const collectionId = record.collectionId || 'volleyball_matches';
+        return `http://127.0.0.1:8090/api/files/${collectionId}/${record.id}/${filename}`;
+    };
+
     useEffect(() => {
         document.title = 'VolleyScore Display';
         console.log("Display Component Mounted. Match ID:", matchId);
@@ -94,26 +101,50 @@ function Display() {
                         <div className="absolute top-0 bottom-0 left-0 w-4 bg-slate-400 z-10 border-r border-black/20" />
                     )}
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
+                        {match.homeLogo && (
+                            <img src={getFileUrl(match, match.homeLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
+                        )}
                         <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight">{match.homeTeam}</h1>
-                        {/* Sets Won Text */}
-                        <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                            <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
-                            <span className="text-xl font-bold tabular-nums leading-none">{navSetsWon}</span>
-                        </div>
+                        {/* Sets Won Text - Only show here if NO logo */}
+                        {!match.homeLogo && (
+                            <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                                <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
+                                <span className="text-xl font-bold tabular-nums leading-none">{navSetsWon}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex items-center bg-black px-6 min-w-[340px] justify-center relative">
-                    <div className="text-8xl font-mono font-bold text-blue-400 w-[2.5ch] text-center tabular-nums">
-                        {match.scores.home}
+                <div className="flex items-center bg-black px-8 py-4 min-w-[380px] justify-center relative gap-8">
+
+                    {/* Home Score & Sets */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="text-8xl font-mono font-bold text-blue-400 w-[2.5ch] text-center tabular-nums leading-none">
+                            {match.scores.home}
+                        </div>
+                        {match.homeLogo && (
+                            <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                <span className="text-3xl font-bold text-blue-500 tabular-nums leading-none">{navSetsWon}</span>
+                            </div>
+                        )}
                     </div>
-                    {/* Animated Divider */}
-                    <div className="text-2xl text-slate-700 font-bold px-4 flex flex-col items-center gap-1">
-                        <div className="w-1 h-20 bg-slate-800 rounded-full" />
-                    </div>
-                    <div className="text-8xl font-mono font-bold text-red-500 w-[2.5ch] text-center tabular-nums">
-                        {match.scores.away}
+
+                    {/* Divider */}
+                    <div className="h-24 w-px bg-slate-800" />
+
+                    {/* Away Score & Sets */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="text-8xl font-mono font-bold text-red-500 w-[2.5ch] text-center tabular-nums leading-none">
+                            {match.scores.away}
+                        </div>
+                        {match.awayLogo && (
+                            <div className="flex flex-col items-center">
+                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                <span className="text-3xl font-bold text-red-500 tabular-nums leading-none">{awaySetsWon}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -130,13 +161,18 @@ function Display() {
                         <div className="absolute top-0 bottom-0 right-0 w-4 bg-slate-400 z-10 border-l border-black/20" />
                     )}
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
+                        {match.awayLogo && (
+                            <img src={getFileUrl(match, match.awayLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
+                        )}
                         <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight">{match.awayTeam}</h1>
-                        {/* Sets Won Text */}
-                        <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                            <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
-                            <span className="text-xl font-bold tabular-nums leading-none">{awaySetsWon}</span>
-                        </div>
+                        {/* Sets Won Text - Only show here if NO logo */}
+                        {!match.awayLogo && (
+                            <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                                <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
+                                <span className="text-xl font-bold tabular-nums leading-none">{awaySetsWon}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

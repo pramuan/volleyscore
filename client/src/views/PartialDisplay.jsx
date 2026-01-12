@@ -40,6 +40,11 @@ function PartialDisplay() {
     const getContent = () => {
         if (!match) return '';
 
+        const getFileUrl = (record, filename) => {
+            if (!record || !filename) return null;
+            return `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${filename}`;
+        };
+
         // Resolve team props
         const teamKey = team === 'home' || team === 'away' ? team : null;
         if (!teamKey) return 'Invalid Team';
@@ -56,10 +61,24 @@ function PartialDisplay() {
             return match.sets.filter(s => s.winner === teamKey).length;
         }
 
+        if (category === 'logo') {
+            const filename = teamKey === 'home' ? match.homeLogo : match.awayLogo;
+            return getFileUrl(match, filename);
+        }
+
         return 'Invalid Category';
     };
 
     const content = getContent();
+
+    if (category === 'logo') {
+        if (!content) return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-transparent overflow-hidden p-4">
+                <img src={content} className="max-w-full max-h-screen object-contain drop-shadow-xl" alt="Team Logo" />
+            </div>
+        );
+    }
 
     // specific styles based on category for optimal display
     let textStyle = "font-bold text-slate-800"; // Default

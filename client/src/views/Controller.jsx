@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield } from 'lucide-react';
 
 function Controller() {
     const { matchId } = useParams();
     const [match, setMatch] = useState(null);
     const [connected, setConnected] = useState(false);
+
+    const getFileUrl = (record, filename) => {
+        if (!record || !filename) return null;
+        return `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${filename}`;
+    };
 
     useEffect(() => {
         document.title = 'VolleyScore Controller';
@@ -138,6 +143,11 @@ function Controller() {
                     >
                         <h2 className="text-xl lg:text-2xl font-bold tracking-tight uppercase truncate drop-shadow-sm flex items-center justify-center gap-3">
                             {match.servingTeam === 'home' && <CircleDot className="animate-pulse" />}
+                            {match.homeLogo ? (
+                                <img src={getFileUrl(match, match.homeLogo)} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" alt="" />
+                            ) : (
+                                <Shield className="w-6 h-6 opacity-50" />
+                            )}
                             {match.homeTeam}
                         </h2>
                         {match.servingTeam === 'home' && <div className="absolute top-2 right-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">SERVING</div>}
@@ -221,6 +231,11 @@ function Controller() {
                     >
                         <h2 className="text-xl lg:text-2xl font-bold tracking-tight uppercase truncate drop-shadow-sm flex items-center justify-center gap-3">
                             {match.servingTeam === 'away' && <CircleDot className="animate-pulse" />}
+                            {match.awayLogo ? (
+                                <img src={getFileUrl(match, match.awayLogo)} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" alt="" />
+                            ) : (
+                                <Shield className="w-6 h-6 opacity-50" />
+                            )}
                             {match.awayTeam}
                         </h2>
                         {match.servingTeam === 'away' && <div className="absolute top-2 right-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">SERVING</div>}

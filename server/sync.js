@@ -23,9 +23,12 @@ class VolleySync {
             // Convert PB record to our Application Match Object
             return {
                 id: record.id,
+                collectionId: record.collectionId,
                 name: record.name,
                 homeTeam: record.homeTeam,
                 awayTeam: record.awayTeam,
+                homeLogo: record.homeLogo,
+                awayLogo: record.awayLogo,
                 sets: record.sets || [],
                 currentSet: record.currentSet,
                 scores: record.scores || { home: 0, away: 0 },

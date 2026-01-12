@@ -16,7 +16,9 @@ function Management() {
         homeTeam: 'Home',
         awayTeam: 'Away',
         bestOf: '3',
-        setPoints: '25'
+        setPoints: '25',
+        homeLogo: null,
+        awayLogo: null
     });
     const [expandedMatchId, setExpandedMatchId] = useState(null);
     const navigate = useNavigate();
@@ -57,34 +59,66 @@ function Management() {
         try {
             if (editingMatchId) {
                 // UPDATE Existing Match
-                const data = {
-                    name: newMatchData.name,
-                    homeTeam: newMatchData.homeTeam,
-                    awayTeam: newMatchData.awayTeam,
-                    config: {
-                        bestOf: parseInt(newMatchData.bestOf),
-                        setPoints: parseInt(newMatchData.setPoints),
-                        tieBreakPoints: 15
-                    }
+                const formData = new FormData();
+                formData.append('name', newMatchData.name);
+                formData.append('homeTeam', newMatchData.homeTeam);
+                formData.append('awayTeam', newMatchData.awayTeam);
+
+                // Config JSON needs to be stringified if sent via FormData
+                const configData = {
+                    bestOf: parseInt(newMatchData.bestOf),
+                    setPoints: parseInt(newMatchData.setPoints),
+                    tieBreakPoints: 15
                 };
-                await pb.collection('volleyball_matches').update(editingMatchId, data);
+                formData.append('config', JSON.stringify(configData));
+
+                if (newMatchData.homeLogo instanceof File) {
+                    formData.append('homeLogo', newMatchData.homeLogo);
+                } else if (newMatchData.homeLogo === 'DELETE') {
+                    formData.append('homeLogo', '');
+                }
+
+                if (newMatchData.awayLogo instanceof File) {
+                    formData.append('awayLogo', newMatchData.awayLogo);
+                } else if (newMatchData.awayLogo === 'DELETE') {
+                    formData.append('awayLogo', '');
+                }
+
+                await pb.collection('volleyball_matches').update(editingMatchId, formData);
+                alert('Match updated successfully!');
             } else {
                 // CREATE New Match
-                const data = {
-                    name: newMatchData.name,
-                    homeTeam: newMatchData.homeTeam,
-                    awayTeam: newMatchData.awayTeam,
-                    currentSet: 1,
-                    sets: [], // Empty JSON array
-                    scores: { home: 0, away: 0 },
-                    config: {
-                        bestOf: parseInt(newMatchData.bestOf),
-                        setPoints: parseInt(newMatchData.setPoints),
-                        tieBreakPoints: 15
-                    },
-                    is_live: false
+                const formData = new FormData();
+                formData.append('name', newMatchData.name);
+                formData.append('homeTeam', newMatchData.homeTeam);
+                formData.append('awayTeam', newMatchData.awayTeam);
+                formData.append('is_live', 'false'); // FormData sends strings
+
+                const configData = {
+                    bestOf: parseInt(newMatchData.bestOf),
+                    setPoints: parseInt(newMatchData.setPoints),
+                    tieBreakPoints: 15
                 };
-                await pb.collection('volleyball_matches').create(data);
+                formData.append('config', JSON.stringify(configData));
+
+                formData.append('scores', JSON.stringify({ home: 0, away: 0 }));
+                formData.append('sets', JSON.stringify([]));
+                formData.append('currentSet', '1');
+
+                if (newMatchData.homeLogo instanceof File) {
+                    formData.append('homeLogo', newMatchData.homeLogo);
+                } else if (newMatchData.homeLogo === 'DELETE') {
+                    formData.append('homeLogo', '');
+                }
+
+                if (newMatchData.awayLogo instanceof File) {
+                    formData.append('awayLogo', newMatchData.awayLogo);
+                } else if (newMatchData.awayLogo === 'DELETE') {
+                    formData.append('awayLogo', '');
+                }
+
+                await pb.collection('volleyball_matches').create(formData);
+                alert('Match created successfully!');
             }
 
             setShowCreateModal(false);
@@ -94,7 +128,9 @@ function Management() {
                 homeTeam: 'Home',
                 awayTeam: 'Away',
                 bestOf: '3',
-                setPoints: '25'
+                setPoints: '25',
+                homeLogo: null,
+                awayLogo: null
             });
 
         } catch (error) {
@@ -110,9 +146,16 @@ function Management() {
             homeTeam: 'Home',
             awayTeam: 'Away',
             bestOf: '3',
-            setPoints: '25'
+            setPoints: '25',
+            homeLogo: null,
+            awayLogo: null
         });
         setShowCreateModal(true);
+    };
+
+    const getFileUrl = (record, filename) => {
+        if (!record || !filename) return null;
+        return `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${filename}`;
     };
 
     const openEditModal = (match) => {
@@ -122,7 +165,9 @@ function Management() {
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
             bestOf: match.config?.bestOf?.toString() || '3',
-            setPoints: match.config?.setPoints?.toString() || '25'
+            setPoints: match.config?.setPoints?.toString() || '25',
+            homeLogo: null, // Don't preload file objects
+            awayLogo: null
         });
         setShowCreateModal(true);
     };
@@ -339,6 +384,7 @@ function Management() {
                                                     { label: 'Team Name', path: `/display/${match.id}/home/name` },
                                                     { label: 'Score', path: `/display/${match.id}/home/score` },
                                                     { label: 'Sets Won', path: `/display/${match.id}/home/sets` },
+                                                    { label: 'Logo', path: `/display/${match.id}/home/logo` },
                                                 ].map((link, idx) => (
                                                     <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-blue-100 shadow-sm">
                                                         <span className="text-sm font-medium text-slate-600">{link.label}</span>
@@ -365,6 +411,7 @@ function Management() {
                                                     { label: 'Team Name', path: `/display/${match.id}/away/name` },
                                                     { label: 'Score', path: `/display/${match.id}/away/score` },
                                                     { label: 'Sets Won', path: `/display/${match.id}/away/sets` },
+                                                    { label: 'Logo', path: `/display/${match.id}/away/logo` },
                                                 ].map((link, idx) => (
                                                     <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-red-100 shadow-sm">
                                                         <span className="text-sm font-medium text-slate-600">{link.label}</span>
@@ -431,7 +478,41 @@ function Management() {
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
+                                    <div className="flex flex-col gap-1">
+                                        {/* Display Existing Home Logo if available and not being removed/replaced */}
+                                        {editingMatchId && matches.find(m => m.id === editingMatchId)?.homeLogo &&
+                                            newMatchData.homeLogo !== 'DELETE' &&
+                                            !(newMatchData.homeLogo instanceof File) && (
+                                                <div className="mb-1 flex items-center gap-2">
+                                                    <img
+                                                        src={getFileUrl(matches.find(m => m.id === editingMatchId), matches.find(m => m.id === editingMatchId).homeLogo)}
+                                                        alt="Current Home Logo"
+                                                        className="w-10 h-10 object-contain bg-slate-50 rounded-md border border-slate-200"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewMatchData({ ...newMatchData, homeLogo: 'DELETE' })}
+                                                        className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                                        title="Remove Logo"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        {/* Show 'Logo will be removed' indicator */}
+                                        {newMatchData.homeLogo === 'DELETE' && (
+                                            <div className="mb-1 flex items-center gap-2 text-xs text-red-600 bg-red-50 px-2 py-1.5 rounded border border-red-100">
+                                                <Trash2 size={12} />
+                                                Existing logo will be removed
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewMatchData({ ...newMatchData, homeLogo: null })}
+                                                    className="ml-auto text-blue-600 hover:underline font-semibold"
+                                                >
+                                                    Undo
+                                                </button>
+                                            </div>
+                                        )}
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Home Team</label>
                                         <input
                                             type="text"
@@ -440,8 +521,50 @@ function Management() {
                                             value={newMatchData.homeTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })}
                                         />
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${newMatchData.homeLogo ? 'text-slate-500' : 'text-transparent'}`}
+                                                onChange={e => setNewMatchData({ ...newMatchData, homeLogo: e.target.files[0] })}
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col gap-1">
+                                        {/* Display Existing Away Logo if available and not being removed/replaced */}
+                                        {editingMatchId && matches.find(m => m.id === editingMatchId)?.awayLogo &&
+                                            newMatchData.awayLogo !== 'DELETE' &&
+                                            !(newMatchData.awayLogo instanceof File) && (
+                                                <div className="mb-1 flex items-center gap-2">
+                                                    <img
+                                                        src={getFileUrl(matches.find(m => m.id === editingMatchId), matches.find(m => m.id === editingMatchId).awayLogo)}
+                                                        alt="Current Away Logo"
+                                                        className="w-10 h-10 object-contain bg-slate-50 rounded-md border border-slate-200"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewMatchData({ ...newMatchData, awayLogo: 'DELETE' })}
+                                                        className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                                        title="Remove Logo"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        {/* Show 'Logo will be removed' indicator */}
+                                        {newMatchData.awayLogo === 'DELETE' && (
+                                            <div className="mb-1 flex items-center gap-2 text-xs text-red-600 bg-red-50 px-2 py-1.5 rounded border border-red-100">
+                                                <Trash2 size={12} />
+                                                Existing logo will be removed
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewMatchData({ ...newMatchData, awayLogo: null })}
+                                                    className="ml-auto text-blue-600 hover:underline font-semibold"
+                                                >
+                                                    Undo
+                                                </button>
+                                            </div>
+                                        )}
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Away Team</label>
                                         <input
                                             type="text"
@@ -450,6 +573,14 @@ function Management() {
                                             value={newMatchData.awayTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })}
                                         />
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 ${newMatchData.awayLogo ? 'text-slate-500' : 'text-transparent'}`}
+                                                onChange={e => setNewMatchData({ ...newMatchData, awayLogo: e.target.files[0] })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

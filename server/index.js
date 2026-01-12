@@ -49,9 +49,12 @@ sync.subscribeToChanges((record) => {
     // Update in-memory state
     const updatedMatch = state.updateMatch(record.id, {
         is_live: record.is_live,
+        collectionId: record.collectionId,
         name: record.name,
         homeTeam: record.homeTeam,
         awayTeam: record.awayTeam,
+        homeLogo: record.homeLogo,
+        awayLogo: record.awayLogo,
         config: record.config
     });
 
