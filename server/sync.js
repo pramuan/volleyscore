@@ -30,6 +30,7 @@ class VolleySync {
                 homeLogo: record.homeLogo,
                 awayLogo: record.awayLogo,
                 backgroundImage: record.backgroundImage,
+                pin: record.pin, // Hydrate PIN
                 sets: record.sets || [],
                 currentSet: record.currentSet,
                 scores: record.scores || { home: 0, away: 0 },

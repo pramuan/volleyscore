@@ -7,6 +7,7 @@ import { socket } from '../socket';
 function Display() {
     const { matchId } = useParams();
     const [match, setMatch] = useState(null);
+    const [matchNotFound, setMatchNotFound] = useState(false);
 
     const getFileUrl = (record, filename) => {
         if (!record || !filename) return null;
@@ -45,15 +46,29 @@ function Display() {
             if (m) {
                 console.log("Found match in init_state:", m);
                 setMatch(m);
+                setMatchNotFound(false);
             } else {
                 console.warn("Match not found in init_state for ID:", matchId);
+                setMatchNotFound(true);
             }
         });
 
         socket.on('matches_updated', (state) => {
             console.log("Received matches_updated:", state);
             const m = state.matches.find(m => m.id === matchId);
-            if (m) setMatch(m);
+            if (m) {
+                setMatch(m);
+                setMatchNotFound(false);
+            } else {
+                setMatchNotFound(true);
+            }
+        });
+
+        socket.on('match_not_found', ({ matchId: deletedMatchId }) => {
+            if (deletedMatchId === matchId) {
+                setMatchNotFound(true);
+                setMatch(null);
+            }
         });
 
         socket.on('match_update', updateData);
@@ -68,8 +83,27 @@ function Display() {
             socket.off('init_state');
             socket.off('matches_updated');
             socket.off('match_update');
+            socket.off('match_not_found');
         };
     }, [matchId]);
+
+    // Match Not Found Error Page
+    if (matchNotFound) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-slate-900 text-white p-4">
+                <div className="bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl text-center border border-slate-700">
+                    <div className="bg-red-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Trophy className="text-red-400" size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Match Not Found</h2>
+                    <p className="text-slate-400 mb-6 text-sm">
+                        The match you're looking for doesn't exist or has been deleted.
+                    </p>
+                    <div className="text-xs text-slate-500 font-mono">Match ID: {matchId}</div>
+                </div>
+            </div>
+        );
+    }
 
     if (!match) return (
         <div className="flex flex-col items-center justify-center h-screen text-white/50 font-mono text-xl">

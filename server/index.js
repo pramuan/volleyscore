@@ -92,7 +92,8 @@ io.on('connection', (socket) => {
         if (match) {
             socket.emit('match_update', match);
         } else {
-            error: "Match not found"
+            console.log(`Match ${matchId} not found`);
+            socket.emit('match_not_found', { matchId });
         }
     });
 

@@ -3,11 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
-import PocketBase from 'pocketbase';
+import pb from '../lib/pocketbase';
 import volleyballIcon from '../assets/volleyball_48.png';
-
-// Initialize PocketBase
-const pb = new PocketBase('http://127.0.0.1:8090');
 
 function Management() {
     const [matches, setMatches] = useState([]);
@@ -23,7 +20,8 @@ function Management() {
         homeColor: '#1d4ed8', // Default Blue
         awayColor: '#b91c1c', // Default Red
         homeLogo: null,
-        awayLogo: null
+        awayLogo: null,
+        pin: ''
     });
     const [expandedMatchId, setExpandedMatchId] = useState(null);
     const navigate = useNavigate();
@@ -82,6 +80,11 @@ function Management() {
                 };
                 formData.append('config', JSON.stringify(configData));
 
+                // Update PIN if provided
+                if (newMatchData.pin) {
+                    formData.append('pin', newMatchData.pin);
+                }
+
                 if (newMatchData.homeLogo instanceof File) {
                     formData.append('homeLogo', newMatchData.homeLogo);
                 } else if (newMatchData.homeLogo === 'DELETE') {
@@ -109,6 +112,10 @@ function Management() {
                 formData.append('homeTeam', newMatchData.homeTeam);
                 formData.append('awayTeam', newMatchData.awayTeam);
                 formData.append('is_live', 'false'); // FormData sends strings
+
+                // Enforce PIN
+                const finalPin = newMatchData.pin || Math.floor(1000 + Math.random() * 9000).toString();
+                formData.append('pin', finalPin);
 
                 const configData = {
                     bestOf: parseInt(newMatchData.bestOf),
@@ -168,6 +175,7 @@ function Management() {
 
     const openCreateModal = () => {
         setEditingMatchId(null);
+        const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
         setNewMatchData({
             name: 'New Match',
             homeTeam: 'Home',
@@ -177,7 +185,8 @@ function Management() {
             homeColor: '',
             awayColor: '',
             homeLogo: null,
-            awayLogo: null
+            awayLogo: null,
+            pin: randomPin
         });
         setShowCreateModal(true);
     };
@@ -198,7 +207,8 @@ function Management() {
             homeColor: match.config?.homeColor || '',
             awayColor: match.config?.awayColor || '',
             homeLogo: null, // Don't preload file objects
-            awayLogo: null
+            awayLogo: null,
+            pin: match.pin || ''
         });
         setShowCreateModal(true);
     };
@@ -277,11 +287,16 @@ function Management() {
         }
     };
 
+    const handleLogout = () => {
+        pb.authStore.clear();
+        navigate('/login');
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
                         {/* <div className="bg-blue-600 p-2 rounded-lg text-white">
                             <Monitor size={24} />
@@ -291,17 +306,25 @@ function Management() {
                             VolleyScore Manager
                         </h1>
                     </div>
-                    <button
-                        onClick={openCreateModal}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-full hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30 font-semibold"
-                    >
-                        <Plus size={20} /> Create New Match
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={openCreateModal}
+                            className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-full hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30 font-semibold"
+                        >
+                            <Plus size={20} /> Create New Match
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="max-w-6xl mx-auto p-4 md:p-8">
+            <div className="max-w-7xl mx-auto p-4 md:p-8">
                 <div className="grid gap-6">
                     {matches.length > 0 && matches.map(match => (
                         <div
@@ -328,6 +351,9 @@ function Management() {
                                             <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 whitespace-nowrap">Set {match.currentSet}</span>
                                             <span className="bg-blue-50 px-2 py-0.5 rounded text-blue-600 border border-blue-100 whitespace-nowrap">Best of {match.config?.bestOf || 3}</span>
                                             <span className="bg-blue-50 px-2 py-0.5 rounded text-blue-600 border border-blue-100 whitespace-nowrap">{match.config?.setPoints || 25} pts</span>
+                                            {match.pin && (
+                                                <span className="bg-amber-50 px-2 py-0.5 rounded text-amber-700 border border-amber-200 whitespace-nowrap font-mono">PIN: {match.pin}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -554,6 +580,7 @@ function Management() {
                                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                                         value={newMatchData.name}
                                         onChange={e => setNewMatchData({ ...newMatchData, name: e.target.value })}
+                                        placeholder="Match Name"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -776,6 +803,24 @@ function Management() {
                                             onChange={e => setNewMatchData({ ...newMatchData, backgroundImage: e.target.files[0] })}
                                         />
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4 mt-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Controller PIN</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                maxLength={4}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-center tracking-widest font-mono font-bold text-slate-600 bg-slate-50"
+                                                value={newMatchData.pin || ''}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                    setNewMatchData({ ...newMatchData, pin: val });
+                                                }}
+                                                placeholder="4-digit PIN"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="mt-8 pt-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white pb-2">
                                     <button
@@ -798,7 +843,7 @@ function Management() {
 
                 )
             }
-            <footer className="fixed bottom-0 left-0 w-full py-4 text-center text-slate-400 text-xs font-medium bg-slate-50 z-50">
+            <footer className="fixed bottom-0 left-0 w-full py-4 text-center text-slate-400 text-xs font-medium bg-slate-50 z-0">
                 Powered by 3PT Live Streaming
             </footer>
         </div >

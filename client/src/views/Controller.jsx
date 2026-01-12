@@ -8,6 +8,12 @@ function Controller() {
     const { matchId } = useParams();
     const [match, setMatch] = useState(null);
     const [connected, setConnected] = useState(false);
+    const [matchNotFound, setMatchNotFound] = useState(false);
+
+    // PIN Logic - must be at top level
+    const [pinInput, setPinInput] = useState('');
+    const [isUnlocked, setIsUnlocked] = useState(false);
+    const [isPinError, setIsPinError] = useState(false);
 
     const getFileUrl = (record, filename) => {
         if (!record || !filename) return null;
@@ -28,17 +34,35 @@ function Controller() {
 
         socket.on('init_state', (state) => {
             const m = state.matches.find(m => m.id === matchId);
-            setMatch(m);
+            if (m) {
+                setMatch(m);
+                setMatchNotFound(false);
+            } else {
+                setMatchNotFound(true);
+            }
         });
 
         socket.on('matches_updated', (state) => {
             const m = state.matches.find(m => m.id === matchId);
-            setMatch(m);
+            if (m) {
+                setMatch(m);
+                setMatchNotFound(false);
+            } else {
+                setMatchNotFound(true);
+            }
         });
 
         socket.on('match_update', (updatedMatch) => {
             if (updatedMatch.id === matchId) {
                 setMatch(updatedMatch);
+                setMatchNotFound(false);
+            }
+        });
+
+        socket.on('match_not_found', ({ matchId: deletedMatchId }) => {
+            if (deletedMatchId === matchId) {
+                setMatchNotFound(true);
+                setMatch(null);
             }
         });
 
@@ -48,8 +72,23 @@ function Controller() {
             socket.off('init_state');
             socket.off('matches_updated');
             socket.off('match_update');
+            socket.off('match_not_found');
         };
     }, [matchId]);
+
+    const handlePinSubmit = (e) => {
+        e.preventDefault();
+        // If match has no pin, or input matches pin
+        if (!match?.pin || pinInput === match.pin) {
+            setIsUnlocked(true);
+            setIsPinError(false);
+            toast.success("Controller Unlocked");
+        } else {
+            setIsPinError(true);
+            toast.error("Incorrect PIN");
+            setPinInput('');
+        }
+    };
 
     const updateScore = (team, delta) => {
         socket.emit('update_score', { matchId, team, delta });
@@ -132,6 +171,29 @@ function Controller() {
         socket.emit('update_match_details', { matchId, data: { leftSideTeam: side === 'home_left' ? 'home' : 'away' } });
     };
 
+    // Match Not Found Error Page
+    if (matchNotFound) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+                    <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Trophy className="text-red-600" size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Match Not Found</h2>
+                    <p className="text-gray-500 mb-6 text-sm">
+                        The match you're looking for doesn't exist or has been deleted.
+                    </p>
+                    <Link
+                        to="/management"
+                        className="inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30"
+                    >
+                        Back to Management
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     if (!match) return <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-500 font-medium">Loading match context...</div>;
 
     // Helper to check game state
@@ -149,6 +211,72 @@ function Controller() {
 
     const homeState = checkState(match.scores.home, match.scores.away);
     const awayState = checkState(match.scores.away, match.scores.home);
+
+    // PIN LOCK SCREEN
+    if (match && match.pin && !isUnlocked) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center">
+                    <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Shield className="text-red-600" size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Controller Locked</h2>
+                    <p className="text-gray-500 mb-6 text-sm">Enter the 4-digit PIN to access score controls for <strong>{match.name}</strong>.</p>
+
+                    <form onSubmit={handlePinSubmit} className="space-y-4">
+                        <div className="flex gap-3 justify-center">
+                            {[0, 1, 2, 3].map((index) => (
+                                <input
+                                    key={index}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    autoFocus={index === 0}
+                                    value={pinInput[index] || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 1) {
+                                            const newPin = pinInput.split('');
+                                            newPin[index] = val;
+                                            setPinInput(newPin.join(''));
+                                            setIsPinError(false);
+
+                                            // Auto-focus next input
+                                            if (val && index < 3) {
+                                                const nextInput = e.target.parentElement.children[index + 1];
+                                                if (nextInput) nextInput.focus();
+                                            }
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        // Handle backspace to go to previous input
+                                        if (e.key === 'Backspace' && !pinInput[index] && index > 0) {
+                                            const prevInput = e.target.parentElement.children[index - 1];
+                                            if (prevInput) prevInput.focus();
+                                        }
+                                    }}
+                                    className={`w-16 h-16 text-center text-2xl font-bold border-2 rounded-xl focus:ring-4 focus:outline-none transition-all ${isPinError
+                                        ? 'border-red-500 focus:ring-red-100 bg-red-50'
+                                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-100'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30"
+                        >
+                            Unlock Controller
+                        </button>
+                    </form>
+                    <Link to="/management" className="inline-block mt-4 text-sm text-gray-400 hover:text-gray-600">
+                        Back to Management
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     const anySetWon = homeState === 'WON' || awayState === 'WON';
 
     return (

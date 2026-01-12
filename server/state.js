@@ -11,21 +11,32 @@ class VolleyState {
 
   createMatch(data) {
     const id = 'match_' + Date.now();
+
+    // Extract and parse config values with defaults
+    const config = data.config || {};
+    const matchConfig = {
+      bestOf: parseInt(config.bestOf) || 3,
+      setPoints: parseInt(config.setPoints) || 25,
+      tieBreakPoints: parseInt(config.tieBreakPoints) || 15,
+      homeColor: config.homeColor || '#1d4ed8',
+      awayColor: config.awayColor || '#b91c1c'
+    };
+
     const newMatch = {
-      id,
-      ...data,
+      id, // Use the generated ID
+      name: data.name || 'Untitled Match',
+      homeTeam: data.homeTeam || 'Home',
+      awayTeam: data.awayTeam || 'Away',
+      homeLogo: data.homeLogo || null,
+      awayLogo: data.awayLogo || null,
+      backgroundImage: data.backgroundImage || null,
+      pin: data.pin || null, // Capture PIN
       sets: [], // History of set scores: [{home: 25, away: 23, winner: 'home'}]
       currentSet: 1,
       scores: { home: 0, away: 0 },
       servingTeam: null,
       winner: null,
-      // Default config if not provided
-      config: {
-        bestOf: 3,
-        setPoints: 25,
-        tieBreakPoints: 15,
-        ...data.config
-      }
+      config: matchConfig
     };
     this.matches.push(newMatch);
     if (!this.activeMatchId) {
