@@ -335,7 +335,7 @@ function Management() {
                             onClick={openCreateModal}
                             className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-full hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30 font-semibold"
                         >
-                            <Plus size={20} /> Create New Match
+                            <Plus size={20} /> New Match
                         </button>
                         <button
                             onClick={handleLogout}
@@ -439,7 +439,7 @@ function Management() {
                                                             </span>
                                                             <div className="flex items-stretch gap-1">
                                                                 <a
-                                                                    href={`http://${window.location.hostname}:${window.location.port}/controller/${match.id}`}
+                                                                    href={`http://${serverIp ? serverIp : window.location.hostname}:${window.location.port}/controller/${match.id}`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="h-10 flex-1 bg-slate-50 text-slate-700 font-bold text-sm px-3 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow border border-slate-200 transition-all flex items-center justify-center gap-2"
@@ -465,7 +465,7 @@ function Management() {
                                                             </span>
                                                             <div className="flex items-stretch gap-1">
                                                                 <a
-                                                                    href={`http://${window.location.hostname}:${window.location.port}/display/${match.id}`}
+                                                                    href={`http://${serverIp ? serverIp : window.location.hostname}:${window.location.port}/display/${match.id}`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="h-10 flex-1 bg-slate-50 text-slate-700 font-bold text-sm px-3 rounded-lg hover:bg-white hover:text-purple-600 hover:shadow border border-slate-200 transition-all flex items-center justify-center gap-2"
