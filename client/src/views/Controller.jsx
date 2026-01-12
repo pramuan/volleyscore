@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Controller() {
@@ -92,6 +92,11 @@ function Controller() {
 
     const updateScore = (team, delta) => {
         socket.emit('update_score', { matchId, team, delta });
+    };
+
+    const handleUndo = () => {
+        socket.emit('undo', matchId);
+        toast.success("Action Undone");
     };
 
     const startNewSet = () => {
@@ -461,6 +466,12 @@ function Controller() {
                     onClick={startNewSet}
                 >
                     {anySetWon ? 'Confirm Set & Next' : 'New Set'}
+                </button>
+                <button
+                    className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
+                    onClick={handleUndo}
+                >
+                    <Undo2 size={20} /> Undo
                 </button>
                 <button
                     className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"

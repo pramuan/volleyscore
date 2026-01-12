@@ -37,7 +37,8 @@ class VolleyState {
       servingTeam: null,
       winner: null,
       config: matchConfig,
-      lastActive: Date.now() // Track for cleanup
+      lastActive: Date.now(), // Track for cleanup
+      history: [] // For Undo feature
     };
     this.matches.push(newMatch);
     if (!this.activeMatchId) {
@@ -57,11 +58,51 @@ class VolleyState {
     };
   }
 
+
+  saveSnapshot(match) {
+    // Deep clone match state (excluding history to prevent recursion)
+    // We only need to save specific state fields
+    const snapshot = {
+      scores: { ...match.scores },
+      sets: JSON.parse(JSON.stringify(match.sets)),
+      currentSet: match.currentSet,
+      servingTeam: match.servingTeam,
+      winner: match.winner
+    };
+
+    if (!match.history) match.history = [];
+    match.history.push(snapshot);
+
+    // Limit history to 5 items
+    if (match.history.length > 5) {
+      match.history.shift();
+    }
+  }
+
+  undo(matchId) {
+    const match = this.getMatch(matchId);
+    if (!match || !match.history || match.history.length === 0) return match; // Nothing to undo
+
+    const previousState = match.history.pop();
+
+    // Restore state
+    match.scores = previousState.scores;
+    match.sets = previousState.sets;
+    match.currentSet = previousState.currentSet;
+    match.servingTeam = previousState.servingTeam;
+    match.winner = previousState.winner;
+
+    match.lastActive = Date.now();
+    return match;
+  }
+
   updateScore(matchId, team, delta) {
     const match = this.getMatch(matchId);
     if (!match) return null;
 
     if (match.winner) return match; // Match is already over
+
+    this.saveSnapshot(match); // Save state before change
 
     if (team === 'home') match.scores.home += delta;
     if (team === 'away') match.scores.away += delta;
@@ -78,6 +119,7 @@ class VolleyState {
     const index = this.matches.findIndex(m => m.id === matchId);
     if (index === -1) return null;
 
+    this.saveSnapshot(this.matches[index]); // Save state before change
     this.matches[index] = { ...this.matches[index], ...data, lastActive: Date.now() };
     return this.matches[index];
   }
@@ -85,6 +127,8 @@ class VolleyState {
   startNewSet(matchId) {
     const match = this.getMatch(matchId);
     if (!match) return null;
+
+    this.saveSnapshot(match); // Save state before change
 
     // 1. Determine winner of current set based on config
     const home = match.scores.home;
@@ -138,6 +182,7 @@ class VolleyState {
   setServingTeam(matchId, team) {
     const match = this.getMatch(matchId);
     if (!match) return null;
+    this.saveSnapshot(match); // Save state before change
     match.servingTeam = team;
     match.lastActive = Date.now();
     return match;
@@ -146,6 +191,8 @@ class VolleyState {
   resetMatch(matchId) {
     const match = this.getMatch(matchId);
     if (!match) return null;
+
+    this.saveSnapshot(match); // Save state before change
 
     match.scores = { home: 0, away: 0 };
     match.sets = [];

@@ -145,6 +145,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('undo', (matchId) => {
+        const updatedMatch = state.undo(matchId);
+        if (updatedMatch) {
+            io.to(matchId).emit('match_update', updatedMatch);
+            // No need to full sync unless critical, but let's be safe
+            sync.saveMatch(updatedMatch);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
