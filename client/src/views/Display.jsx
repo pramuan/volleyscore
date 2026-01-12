@@ -159,8 +159,8 @@ function Display({ forcedMatchId }) {
                                     <img src={getFileUrl(match, teamLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
                                 )}
                                 <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight w-full break-words px-4">{teamName}</h1>
-                                {/* Sets Won Text - Only show here if NO logo */}
-                                {!teamLogo && (
+                                {/* Sets Won Text - Only show here if NO logo AND not showing final result */}
+                                {!teamLogo && !match.showFinalResult && (
                                     <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
                                         <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
                                         <span className="text-xl font-bold tabular-nums leading-none">{setsWon}</span>
@@ -172,11 +172,11 @@ function Display({ forcedMatchId }) {
                 })()}
 
                 {/* Center Scoreboard */}
-                <div className={`flex items-center px-8 py-4 min-w-[380px] justify-center relative gap-8 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-black'}`}>
+                <div className={`flex items-center px-8 py-4 min-w-[380px] ${match.showFinalResult ? 'min-h-[180px]' : ''} justify-center relative gap-8 transition-all duration-500 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-black'}`}>
 
-                    {/* Timeout Display OR Scores */}
+                    {/* Timeout Display OR Final Result OR Scores */}
                     {match.timeout?.active ? (
-                        <div className="flex flex-col items-center justify-center w-full animate-in zoom-in duration-300">
+                        <div key="timeout" className="flex flex-col items-center justify-center w-full animate-in zoom-in duration-300">
                             <div className="flex items-center gap-3 text-amber-500 animate-pulse mb-1">
                                 <Timer size={28} />
                                 <span className="font-bold tracking-widest uppercase text-sm">Timeout</span>
@@ -185,8 +185,55 @@ function Display({ forcedMatchId }) {
                                 <CountdownTimer startTime={match.timeout.startTime} duration={match.timeout.duration} />
                             </div>
                         </div>
+                    ) : match.showFinalResult && match.winner ? (
+                        <div key="final-result" className="flex flex-col items-center justify-center w-full animate-in zoom-in duration-300 gap-1">
+                            {/* FINAL RESULT Label - Top */}
+                            <div className="text-xs font-bold tracking-widest text-amber-500 uppercase">
+                                Final Result
+                            </div>
+
+                            {/* Large Set Scores */}
+                            <div className="flex items-center gap-6">
+                                <span
+                                    className="text-8xl font-mono font-bold tabular-nums transition-all drop-shadow-lg"
+                                    style={{ color: getTeamColor('home') }}
+                                >
+                                    {match.sets.filter(s => s.winner === 'home').length}
+                                </span>
+                                <span className="text-5xl text-white font-bold">:</span>
+                                <span
+                                    className="text-8xl font-mono font-bold tabular-nums transition-all drop-shadow-lg"
+                                    style={{ color: getTeamColor('away') }}
+                                >
+                                    {match.sets.filter(s => s.winner === 'away').length}
+                                </span>
+                            </div>
+
+                            {/* Set Details */}
+                            <div className="flex items-center gap-3 text-lg mt-1 font-mono">
+                                {match.sets.map((set, idx) => (
+                                    <div key={idx} className="flex items-center gap-1.5">
+                                        <span className="text-white">Set {idx + 1}:</span>
+                                        <span
+                                            className="font-bold"
+                                            style={{ color: getTeamColor('home') }}
+                                        >
+                                            {set.home}
+                                        </span>
+                                        <span className="text-white">-</span>
+                                        <span
+                                            className="font-bold"
+                                            style={{ color: getTeamColor('away') }}
+                                        >
+                                            {set.away}
+                                        </span>
+                                        {idx < match.sets.length - 1 && <span className="text-white mx-1">|</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     ) : (
-                        <>
+                        <React.Fragment key="normal-scores">
                             {/* Left Score & Sets */}
                             {(() => {
                                 const teamKey = leftTeamKey;
@@ -203,7 +250,7 @@ function Display({ forcedMatchId }) {
                                         >
                                             {score}
                                         </div>
-                                        {teamLogo && (
+                                        {teamLogo && !match.showFinalResult && (
                                             <div className="flex flex-col items-center">
                                                 <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
                                                 <span
@@ -249,7 +296,7 @@ function Display({ forcedMatchId }) {
                                     </div>
                                 );
                             })()}
-                        </>
+                        </React.Fragment>
                     )}
                 </div>
 
@@ -281,8 +328,8 @@ function Display({ forcedMatchId }) {
                                     <img src={getFileUrl(match, teamLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
                                 )}
                                 <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight w-full break-words px-4">{teamName}</h1>
-                                {/* Sets Won Text - Only show here if NO logo */}
-                                {!teamLogo && (
+                                {/* Sets Won Text - Only show here if NO logo AND not showing final result */}
+                                {!teamLogo && !match.showFinalResult && (
                                     <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
                                         <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
                                         <span className="text-xl font-bold tabular-nums leading-none">{setsWon}</span>

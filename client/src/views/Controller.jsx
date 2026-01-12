@@ -1,8 +1,76 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2, Timer, X, StepForward, Check } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2, Timer, X, StepForward, Check, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Session Management Constants
+const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
+const SESSION_KEY = 'volleyscore_sessions';
+
+// Session Helper Functions
+const getSession = (matchId) => {
+    try {
+        const sessions = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        const session = sessions[matchId];
+
+        if (!session) return null;
+
+        const now = Date.now();
+        if (now > session.expiresAt) {
+            // Session expired
+            clearSession(matchId);
+            return null;
+        }
+
+        return session;
+    } catch (e) {
+        return null;
+    }
+};
+
+const createSession = (matchId) => {
+    try {
+        const sessions = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        const now = Date.now();
+
+        sessions[matchId] = {
+            authenticated: true,
+            lastActivity: now,
+            expiresAt: now + SESSION_TIMEOUT
+        };
+
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+    } catch (e) {
+        console.error('Failed to create session:', e);
+    }
+};
+
+const updateActivity = (matchId) => {
+    try {
+        const sessions = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        const session = sessions[matchId];
+
+        if (session) {
+            const now = Date.now();
+            session.lastActivity = now;
+            session.expiresAt = now + SESSION_TIMEOUT;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+        }
+    } catch (e) {
+        console.error('Failed to update activity:', e);
+    }
+};
+
+const clearSession = (matchId) => {
+    try {
+        const sessions = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        delete sessions[matchId];
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessions));
+    } catch (e) {
+        console.error('Failed to clear session:', e);
+    }
+};
 
 function Controller() {
     const { matchId } = useParams();
@@ -14,6 +82,14 @@ function Controller() {
     const [pinInput, setPinInput] = useState('');
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [isPinError, setIsPinError] = useState(false);
+
+    // Check for existing session on mount
+    useEffect(() => {
+        const session = getSession(matchId);
+        if (session) {
+            setIsUnlocked(true);
+        }
+    }, [matchId]);
 
     const getFileUrl = (record, filename) => {
         if (!record || !filename) return null;
@@ -82,6 +158,7 @@ function Controller() {
         if (!match?.pin || pinInput === match.pin) {
             setIsUnlocked(true);
             setIsPinError(false);
+            createSession(matchId); // Create session on successful PIN entry
             toast.success("Controller Unlocked");
         } else {
             setIsPinError(true);
@@ -91,15 +168,18 @@ function Controller() {
     };
 
     const updateScore = (team, delta) => {
+        updateActivity(matchId); // Track activity
         socket.emit('update_score', { matchId, team, delta });
     };
 
     const handleUndo = () => {
+        updateActivity(matchId); // Track activity
         socket.emit('undo', matchId);
         toast.success("Action Undone");
     };
 
     const toggleTimeout = () => {
+        updateActivity(matchId); // Track activity
         if (match.timeout?.active) {
             socket.emit('stop_timeout', matchId);
             toast.success("Timeout Cancelled");
@@ -109,7 +189,14 @@ function Controller() {
         }
     };
 
+    const toggleFinalResult = () => {
+        updateActivity(matchId); // Track activity
+        socket.emit('toggle_final_result', matchId);
+        toast.success(match.showFinalResult ? "Showing Scoreboard" : "Showing Final Result");
+    };
+
     const startNewSet = () => {
+        updateActivity(matchId); // Track activity
         toast((t) => (
             <div className="flex flex-col gap-2">
                 <span className="font-bold text-sm">Start a New Set?</span>
@@ -141,6 +228,7 @@ function Controller() {
     };
 
     const resetMatch = () => {
+        updateActivity(matchId); // Track activity
         toast((t) => (
             <div className="flex flex-col gap-2">
                 <span className="font-bold text-sm text-red-600">RESET MATCH?</span>
@@ -497,6 +585,15 @@ function Controller() {
                 >
                     <RotateCcw size={18} /> Reset
                 </button>
+                {match.winner && (
+                    <button
+                        className={`py-3 px-4 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${match.showFinalResult ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                        onClick={toggleFinalResult}
+                    >
+                        <Award size={18} />
+                        {match.showFinalResult ? 'Scoreboard' : 'Final Result'}
+                    </button>
+                )}
             </footer>
         </div>
     );

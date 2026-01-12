@@ -39,7 +39,8 @@ class VolleyState {
       config: matchConfig,
       lastActive: Date.now(), // Track for cleanup
       history: [], // For Undo feature
-      timeout: { active: false, startTime: 0, duration: 30000 } // Timeout state
+      timeout: { active: false, startTime: 0, duration: 30000 }, // Timeout state
+      showFinalResult: false // Toggle for final result display
     };
     this.matches.push(newMatch);
     if (!this.activeMatchId) {
@@ -227,6 +228,15 @@ class VolleyState {
 
     match.timeout.active = false;
 
+    match.lastActive = Date.now();
+    return match;
+  }
+
+  toggleFinalResult(matchId) {
+    const match = this.getMatch(matchId);
+    if (!match) return null;
+
+    match.showFinalResult = !match.showFinalResult;
     match.lastActive = Date.now();
     return match;
   }

@@ -182,6 +182,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('toggle_final_result', (matchId) => {
+        const updatedMatch = state.toggleFinalResult(matchId);
+        if (updatedMatch) {
+            io.to(matchId).emit('match_update', updatedMatch);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
