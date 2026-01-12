@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone } from 'lucide-react';
+import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone, Tv } from 'lucide-react';
 import toast from 'react-hot-toast';
 import pb from '../lib/pocketbase';
 import volleyballIcon from '../assets/volleyball_48.png';
@@ -21,7 +21,8 @@ function Management() {
         awayColor: '#b91c1c', // Default Red
         homeLogo: null,
         awayLogo: null,
-        pin: ''
+        pin: '',
+        courtId: '1' // Default Court 1
     });
     const [expandedMatchId, setExpandedMatchId] = useState(null);
     const [serverIp, setServerIp] = useState(null); // Store server IP
@@ -83,7 +84,8 @@ function Management() {
                     setPoints: parseInt(newMatchData.setPoints),
                     tieBreakPoints: 15,
                     homeColor: newMatchData.homeColor,
-                    awayColor: newMatchData.awayColor
+                    awayColor: newMatchData.awayColor,
+                    courtId: newMatchData.courtId || '1'
                 };
                 formData.append('config', JSON.stringify(configData));
 
@@ -129,7 +131,8 @@ function Management() {
                     setPoints: parseInt(newMatchData.setPoints),
                     tieBreakPoints: 15,
                     homeColor: newMatchData.homeColor,
-                    awayColor: newMatchData.awayColor
+                    awayColor: newMatchData.awayColor,
+                    courtId: newMatchData.courtId || '1'
                 };
                 formData.append('config', JSON.stringify(configData));
 
@@ -171,9 +174,9 @@ function Management() {
                 awayColor: '',
                 homeLogo: null,
                 awayLogo: null,
-                backgroundImage: null
+                backgroundImage: null,
+                courtId: '1'
             });
-
         } catch (error) {
             toast.error("Failed to save match: " + error.message);
             console.error(error);
@@ -193,7 +196,8 @@ function Management() {
             awayColor: '',
             homeLogo: null,
             awayLogo: null,
-            pin: randomPin
+            pin: randomPin,
+            courtId: '1'
         });
         setShowCreateModal(true);
     };
@@ -215,7 +219,8 @@ function Management() {
             awayColor: match.config?.awayColor || '',
             homeLogo: null, // Don't preload file objects
             awayLogo: null,
-            pin: match.pin || ''
+            pin: match.pin || '',
+            courtId: match.config?.courtId || '1'
         });
         setShowCreateModal(true);
     };
@@ -266,9 +271,18 @@ function Management() {
             const isTurningOn = !matchToToggle.is_live;
 
             if (isTurningOn) {
-                // If turning ON, ensure others are OFF (Exclusive Mode)
-                const activeMatches = matches.filter(m => m.is_live && m.id !== matchId);
-                await Promise.all(activeMatches.map(m =>
+                // MULTI-COURT LOGIC:
+                // Only turn off other matches that are on the SAME COURT.
+                // Default to '1' if courtId is missing.
+                const targetCourtId = matchToToggle.config?.courtId || '1';
+
+                const activeMatchesSameCourt = matches.filter(m =>
+                    m.is_live &&
+                    m.id !== matchId &&
+                    (m.config?.courtId || '1') === targetCourtId
+                );
+
+                await Promise.all(activeMatchesSameCourt.map(m =>
                     pb.collection('volleyball_matches').update(m.id, { is_live: false })
                 ));
             }
@@ -334,7 +348,7 @@ function Management() {
             </div>
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto p-4 md:p-8">
+            <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24">
                 <div className="grid gap-6">
                     {matches.length > 0 && matches.map(match => (
                         <div
@@ -358,6 +372,9 @@ function Management() {
                                         </div>
                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                         <div className="flex gap-2 text-xs">
+                                            <span className="bg-purple-50 px-2 py-0.5 rounded text-purple-700 border border-purple-200 whitespace-nowrap font-medium">
+                                                {match.config?.courtId === 'Main' ? 'Main Stadium' : `Court ${match.config?.courtId || '1'}`}
+                                            </span>
                                             <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 whitespace-nowrap">Set {match.currentSet}</span>
                                             <span className="bg-blue-50 px-2 py-0.5 rounded text-blue-600 border border-blue-100 whitespace-nowrap">Best of {match.config?.bestOf || 3}</span>
                                             <span className="bg-blue-50 px-2 py-0.5 rounded text-blue-600 border border-blue-100 whitespace-nowrap">{match.config?.setPoints || 25} pts</span>
@@ -407,7 +424,7 @@ function Management() {
                                                 className="h-10 bg-slate-50 text-slate-500 px-3 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow border border-slate-200 transition-all font-bold text-sm"
                                                 title="Copy Link"
                                             >
-                                                <Copy size={16} />
+                                                <LinkIcon size={16} />
                                             </button>
                                         </div>
                                     </div>
@@ -433,7 +450,7 @@ function Management() {
                                                 className="h-10 bg-slate-50 text-slate-500 px-3 rounded-lg hover:bg-white hover:text-purple-600 hover:shadow border border-slate-200 transition-all font-bold text-sm"
                                                 title="Copy Link"
                                             >
-                                                <Copy size={16} />
+                                                <LinkIcon size={16} />
                                             </button>
                                         </div>
                                     </div>
@@ -467,78 +484,104 @@ function Management() {
                             {/* Broadcast Links Section */}
                             <div className="mt-6 border-t border-slate-100 pt-4">
                                 <button
+                                    type="button"
                                     onClick={() => setExpandedMatchId(expandedMatchId === match.id ? null : match.id)}
-                                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                    className="w-full flex items-center justify-between gap-2 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-sm transition-all border border-slate-100"
                                 >
-                                    {expandedMatchId === match.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    Broadcast Links (OBS/vMix)
+                                    <div className="flex items-center gap-2">
+                                        <Tv size={18} />
+                                        <span>Broadcast Links (OBS/vMix)</span>
+                                    </div>
+                                    {expandedMatchId === match.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                                 </button>
 
                                 {expandedMatchId === match.id && (
-                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                                        {/* Home Team Links */}
-                                        <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
-                                            <h4
-                                                className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
-                                                style={{ color: match.config?.homeColor || '#1d4ed8' }}
-                                            >
-                                                <div
-                                                    className="w-2 h-2 rounded-full"
-                                                    style={{ backgroundColor: match.config?.homeColor || '#1d4ed8' }}
-                                                ></div>
-                                                Home Team ({match.homeTeam})
-                                            </h4>
-                                            <div className="space-y-2">
-                                                {[
-                                                    { label: 'Team Name', path: `/display/${match.id}/home/name` },
-                                                    { label: 'Score', path: `/display/${match.id}/home/score` },
-                                                    { label: 'Sets Won', path: `/display/${match.id}/home/sets` },
-                                                    { label: 'Logo', path: `/display/${match.id}/home/logo` },
-                                                ].map((link, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                                        <span className="text-sm font-medium text-slate-600">{link.label}</span>
-                                                        <button
-                                                            onClick={() => copyLink(link.path)}
-                                                            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
-                                                            title="Copy Link"
-                                                        >
-                                                            <LinkIcon size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                    <div className="mt-4 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+
+                                        {/* Auto-Live Link */}
+                                        <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600">
+                                                    <Tv size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-indigo-900 text-sm">Auto-Live Channel (Court {match.config?.courtId || '1'})</h4>
+                                                    <p className="text-[10px] text-indigo-600 font-medium">Automatically switches to this match when Set as Live.</p>
+                                                </div>
                                             </div>
+                                            <button
+                                                onClick={() => copyLink(`/display/court/${match.config?.courtId || '1'}`)}
+                                                className="bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg border border-indigo-200 transition-all font-bold text-xs flex items-center gap-2 shadow-sm"
+                                            >
+                                                <LinkIcon size={14} /> Copy Link
+                                            </button>
                                         </div>
 
-                                        {/* Away Team Links */}
-                                        <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
-                                            <h4
-                                                className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
-                                                style={{ color: match.config?.awayColor || '#b91c1c' }}
-                                            >
-                                                <div
-                                                    className="w-2 h-2 rounded-full"
-                                                    style={{ backgroundColor: match.config?.awayColor || '#b91c1c' }}
-                                                ></div>
-                                                Away Team ({match.awayTeam})
-                                            </h4>
-                                            <div className="space-y-2">
-                                                {[
-                                                    { label: 'Team Name', path: `/display/${match.id}/away/name` },
-                                                    { label: 'Score', path: `/display/${match.id}/away/score` },
-                                                    { label: 'Sets Won', path: `/display/${match.id}/away/sets` },
-                                                    { label: 'Logo', path: `/display/${match.id}/away/logo` },
-                                                ].map((link, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                                        <span className="text-sm font-medium text-slate-600">{link.label}</span>
-                                                        <button
-                                                            onClick={() => copyLink(link.path)}
-                                                            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
-                                                            title="Copy Link"
-                                                        >
-                                                            <LinkIcon size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Home Team Links */}
+                                            <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                                                <h4
+                                                    className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
+                                                    style={{ color: match.config?.homeColor || '#1d4ed8' }}
+                                                >
+                                                    <div
+                                                        className="w-2 h-2 rounded-full"
+                                                        style={{ backgroundColor: match.config?.homeColor || '#1d4ed8' }}
+                                                    ></div>
+                                                    Home Team ({match.homeTeam})
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {[
+                                                        { label: 'Team Name', path: `/display/${match.id}/home/name` },
+                                                        { label: 'Score', path: `/display/${match.id}/home/score` },
+                                                        { label: 'Sets Won', path: `/display/${match.id}/home/sets` },
+                                                        { label: 'Logo', path: `/display/${match.id}/home/logo` },
+                                                    ].map((link, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                            <span className="text-sm font-medium text-slate-600">{link.label}</span>
+                                                            <button
+                                                                onClick={() => copyLink(link.path)}
+                                                                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
+                                                                title="Copy Link"
+                                                            >
+                                                                <LinkIcon size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Away Team Links */}
+                                            <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                                                <h4
+                                                    className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
+                                                    style={{ color: match.config?.awayColor || '#b91c1c' }}
+                                                >
+                                                    <div
+                                                        className="w-2 h-2 rounded-full"
+                                                        style={{ backgroundColor: match.config?.awayColor || '#b91c1c' }}
+                                                    ></div>
+                                                    Away Team ({match.awayTeam})
+                                                </h4>
+                                                <div className="space-y-2">
+                                                    {[
+                                                        { label: 'Team Name', path: `/display/${match.id}/away/name` },
+                                                        { label: 'Score', path: `/display/${match.id}/away/score` },
+                                                        { label: 'Sets Won', path: `/display/${match.id}/away/sets` },
+                                                        { label: 'Logo', path: `/display/${match.id}/away/logo` },
+                                                    ].map((link, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                            <span className="text-sm font-medium text-slate-600">{link.label}</span>
+                                                            <button
+                                                                onClick={() => copyLink(link.path)}
+                                                                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
+                                                                title="Copy Link"
+                                                            >
+                                                                <LinkIcon size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -738,6 +781,35 @@ function Management() {
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Match Configuration</label>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Court / Arena</label>
+                                            <select
+                                                value={newMatchData.courtId || '1'}
+                                                onChange={(e) => setNewMatchData({ ...newMatchData, courtId: e.target.value })}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+                                            >
+                                                <option value="1">Court 1</option>
+                                                <option value="2">Court 2</option>
+                                                <option value="3">Court 3</option>
+                                                <option value="4">Court 4</option>
+                                                <option value="Main">Main Stadium</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Controller PIN</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                maxLength={4}
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-center tracking-widest font-mono font-bold text-slate-600 bg-slate-50"
+                                                value={newMatchData.pin || ''}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                    setNewMatchData({ ...newMatchData, pin: val });
+                                                }}
+                                                placeholder="4-digit PIN"
+                                            />
+                                        </div>
+                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Match Format</label>
                                             <select
                                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
@@ -812,24 +884,6 @@ function Management() {
                                             className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 ${newMatchData.backgroundImage ? 'text-slate-500' : 'text-transparent'}`}
                                             onChange={e => setNewMatchData({ ...newMatchData, backgroundImage: e.target.files[0] })}
                                         />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 mt-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Controller PIN</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                maxLength={4}
-                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-center tracking-widest font-mono font-bold text-slate-600 bg-slate-50"
-                                                value={newMatchData.pin || ''}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                                    setNewMatchData({ ...newMatchData, pin: val });
-                                                }}
-                                                placeholder="4-digit PIN"
-                                            />
-                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-8 pt-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white pb-2">

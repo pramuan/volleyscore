@@ -6,6 +6,7 @@ import Controller from './views/Controller';
 import Display from './views/Display';
 import PartialDisplay from './views/PartialDisplay';
 import Login from './views/Login';
+import CourtWatcher from './views/CourtWatcher';
 
 import { useState, useEffect } from 'react';
 import pb from './lib/pocketbase';
@@ -81,6 +82,9 @@ function App() {
 
         {/* Partial Display Routes for OBS/vMix */}
         <Route path="/display/:matchId/:team/:category" element={<PartialDisplay />} />
+
+        {/* Multi-Court Auto-Live Watcher */}
+        <Route path="/display/court/:courtId" element={<CourtWatcher />} />
       </Routes>
     </BrowserRouter>
   );

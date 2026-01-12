@@ -4,8 +4,9 @@ import { Trophy, CircleDot } from 'lucide-react';
 import volleyBallIcon from '../assets/volleyball_48.png';
 import { socket } from '../socket';
 
-function Display() {
-    const { matchId } = useParams();
+function Display({ forcedMatchId }) {
+    const params = useParams();
+    const matchId = forcedMatchId || params.matchId;
     const [match, setMatch] = useState(null);
     const [matchNotFound, setMatchNotFound] = useState(false);
 

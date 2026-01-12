@@ -19,7 +19,7 @@ if not exist "%PB_DIR%\pocketbase.exe" (
 
 echo Found PocketBase at: %PB_DIR%
 echo Starting PocketBase...
-start "VolleyScore Database" /B /D "%PB_DIR%" pocketbase.exe serve
+start "VolleyScore Database" /B /D "%PB_DIR%" pocketbase.exe serve --http=0.0.0.0:8090
 
 :: 2. Start Backend Server
 echo Starting Server...
