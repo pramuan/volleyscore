@@ -29,6 +29,7 @@ class VolleySync {
                 awayTeam: record.awayTeam,
                 homeLogo: record.homeLogo,
                 awayLogo: record.awayLogo,
+                backgroundImage: record.backgroundImage,
                 sets: record.sets || [],
                 currentSet: record.currentSet,
                 scores: record.scores || { home: 0, away: 0 },

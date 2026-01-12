@@ -80,102 +80,168 @@ function Display() {
         </div>
     );
 
-    const navSetsWon = match.sets.filter(s => s.winner === 'home').length;
-    const awaySetsWon = match.sets.filter(s => s.winner === 'away').length;
+    const leftTeamKey = (!match.leftSideTeam || match.leftSideTeam === 'home') ? 'home' : 'away';
+    const rightTeamKey = leftTeamKey === 'home' ? 'away' : 'home';
+
+    const getTeamColor = (key) => {
+        if (key === 'home') return match.config?.homeColor || '#1d4ed8'; // blue-700
+        return match.config?.awayColor || '#b91c1c'; // red-700
+    };
 
     return (
         <div className="w-full h-screen flex items-end justify-center pb-10 pointer-events-none font-sans">
             {/* Scoreboard Container - Designed for bottom overlay */}
-            <div className="flex items-stretch bg-slate-900 text-white rounded-xl overflow-hidden shadow-2xl border-4 border-slate-800">
+            <div
+                className="flex items-stretch bg-slate-900 text-white shadow-2xl bg-cover bg-center bg-no-repeat transition-all duration-500"
+                style={match.backgroundImage ? { backgroundImage: `url(${getFileUrl(match, match.backgroundImage)})` } : {}}
+            >
 
-                {/* Home Team */}
-                <div className="flex flex-col items-center bg-gradient-to-br from-blue-900 to-blue-800 w-[420px] relative overflow-hidden">
-                    {/* Service Indicator (Volleyball Icon) - Outer Left */}
-                    {match.servingTeam === 'home' && (
-                        <div className="absolute top-[50%] translate-y-[-50%] left-12 z-20">
-                            <img src={volleyBallIcon} alt="Serving" className="w-12 h-12 drop-shadow-lg animate-spin-slow" />
-                        </div>
-                    )}
-                    {/* Court Side Indicator - Home Team (Only if Home is Left) */}
-                    {(!match.leftSideTeam || match.leftSideTeam === 'home') && (
-                        <div className="absolute top-0 bottom-0 left-0 w-4 bg-slate-400 z-10 border-r border-black/20" />
-                    )}
+                {/* Left Team Panel */}
+                {(() => {
+                    const teamKey = leftTeamKey;
+                    const isHome = teamKey === 'home';
+                    const teamName = isHome ? match.homeTeam : match.awayTeam;
+                    const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                    const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                    const isServing = match.servingTeam === teamKey;
+                    const color = getTeamColor(teamKey);
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
-                        {match.homeLogo && (
-                            <img src={getFileUrl(match, match.homeLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
-                        )}
-                        <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight">{match.homeTeam}</h1>
-                        {/* Sets Won Text - Only show here if NO logo */}
-                        {!match.homeLogo && (
-                            <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                                <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
-                                <span className="text-xl font-bold tabular-nums leading-none">{navSetsWon}</span>
+                    return (
+                        <div
+                            className={`flex flex-col items-center w-[420px] relative overflow-hidden transition-all duration-500 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-gradient-to-br from-slate-700 via-slate-900 to-black'}`}
+                        >
+                            {/* Service Indicator (Volleyball Icon) - Outer Left */}
+                            {isServing && (
+                                <div className="absolute top-[50%] translate-y-[-50%] left-12 z-20">
+                                    <img src={volleyBallIcon} alt="Serving" className="w-12 h-12 drop-shadow-lg animate-spin-slow" />
+                                </div>
+                            )}
+                            {/* Court Side Indicator - Left Team */}
+                            <div className="absolute top-0 bottom-0 left-0 w-4 z-10 border-r border-black/20" style={{ backgroundColor: color }} />
+
+                            <div className="flex-1 flex flex-col items-center justify-center p-4 z-10 w-full">
+                                {teamLogo && (
+                                    <img src={getFileUrl(match, teamLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
+                                )}
+                                <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight w-full break-words px-4">{teamName}</h1>
+                                {/* Sets Won Text - Only show here if NO logo */}
+                                {!teamLogo && (
+                                    <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
+                                        <span className="text-xl font-bold tabular-nums leading-none">{setsWon}</span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex items-center bg-black px-8 py-4 min-w-[380px] justify-center relative gap-8">
-
-                    {/* Home Score & Sets */}
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="text-8xl font-mono font-bold text-blue-400 w-[2.5ch] text-center tabular-nums leading-none">
-                            {match.scores.home}
                         </div>
-                        {match.homeLogo && (
-                            <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
-                                <span className="text-3xl font-bold text-blue-500 tabular-nums leading-none">{navSetsWon}</span>
+                    );
+                })()}
+
+                {/* Center Scoreboard */}
+                <div className={`flex items-center px-8 py-4 min-w-[380px] justify-center relative gap-8 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-black'}`}>
+
+                    {/* Left Score & Sets */}
+                    {(() => {
+                        const teamKey = leftTeamKey;
+                        const isHome = teamKey === 'home';
+                        const score = isHome ? match.scores.home : match.scores.away;
+                        const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                        const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                        const color = getTeamColor(teamKey);
+
+                        return (
+                            <div className="flex flex-col items-center gap-1">
+                                <div
+                                    className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
+                                >
+                                    {score}
+                                </div>
+                                {teamLogo && (
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                        <span
+                                            className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
+                                        >
+                                            {setsWon}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        );
+                    })()}
 
                     {/* Divider */}
                     <div className="h-24 w-px bg-slate-800" />
 
-                    {/* Away Score & Sets */}
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="text-8xl font-mono font-bold text-red-500 w-[2.5ch] text-center tabular-nums leading-none">
-                            {match.scores.away}
-                        </div>
-                        {match.awayLogo && (
-                            <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
-                                <span className="text-3xl font-bold text-red-500 tabular-nums leading-none">{awaySetsWon}</span>
+                    {/* Right Score & Sets */}
+                    {(() => {
+                        const teamKey = rightTeamKey;
+                        const isHome = teamKey === 'home';
+                        const score = isHome ? match.scores.home : match.scores.away;
+                        const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                        const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                        const color = getTeamColor(teamKey);
+
+                        return (
+                            <div className="flex flex-col items-center gap-1">
+                                <div
+                                    className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
+                                >
+                                    {score}
+                                </div>
+                                {teamLogo && (
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                        <span
+                                            className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
+                                        >
+                                            {setsWon}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        );
+                    })()}
                 </div>
 
-                {/* Away Team */}
-                <div className="flex flex-col items-center bg-gradient-to-bl from-red-900 to-red-800 w-[420px] relative overflow-hidden">
-                    {/* Service Indicator (Volleyball Icon) - Outer Right */}
-                    {match.servingTeam === 'away' && (
-                        <div className="absolute top-[50%] translate-y-[-50%] right-12 z-20">
-                            <img src={volleyBallIcon} alt="Serving" className="w-12 h-12 drop-shadow-lg animate-spin-slow" />
-                        </div>
-                    )}
-                    {/* Court Side Indicator - Away Team (Only if Away is Left) */}
-                    {match.leftSideTeam === 'away' && (
-                        <div className="absolute top-0 bottom-0 right-0 w-4 bg-slate-400 z-10 border-l border-black/20" />
-                    )}
+                {/* Right Team Panel */}
+                {(() => {
+                    const teamKey = rightTeamKey;
+                    const isHome = teamKey === 'home';
+                    const teamName = isHome ? match.homeTeam : match.awayTeam;
+                    const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                    const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                    const isServing = match.servingTeam === teamKey;
+                    const color = getTeamColor(teamKey);
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-4 z-10">
-                        {match.awayLogo && (
-                            <img src={getFileUrl(match, match.awayLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
-                        )}
-                        <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight">{match.awayTeam}</h1>
-                        {/* Sets Won Text - Only show here if NO logo */}
-                        {!match.awayLogo && (
-                            <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                                <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
-                                <span className="text-xl font-bold tabular-nums leading-none">{awaySetsWon}</span>
+                    return (
+                        <div
+                            className={`flex flex-col items-center w-[420px] relative overflow-hidden transition-all duration-500 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-gradient-to-bl from-slate-700 via-slate-900 to-black'}`}
+                        >
+                            {/* Service Indicator (Volleyball Icon) - Outer Right */}
+                            {isServing && (
+                                <div className="absolute top-[50%] translate-y-[-50%] right-12 z-20">
+                                    <img src={volleyBallIcon} alt="Serving" className="w-12 h-12 drop-shadow-lg animate-spin-slow" />
+                                </div>
+                            )}
+                            {/* Court Side Indicator - Right Team */}
+                            <div className="absolute top-0 bottom-0 right-0 w-4 z-10 border-l border-black/20" style={{ backgroundColor: color }} />
+
+                            <div className="flex-1 flex flex-col items-center justify-center p-4 z-10 w-full">
+                                {teamLogo && (
+                                    <img src={getFileUrl(match, teamLogo)} className="w-24 h-24 object-contain mb-4 drop-shadow-md" alt="" />
+                                )}
+                                <h1 className="text-3xl font-bold uppercase tracking-wider text-center drop-shadow-md leading-tight w-full break-words px-4">{teamName}</h1>
+                                {/* Sets Won Text - Only show here if NO logo */}
+                                {!teamLogo && (
+                                    <div className="mt-2 flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        <span className="text-[10px] font-bold tracking-widest opacity-60">SETS</span>
+                                        <span className="text-xl font-bold tabular-nums leading-none">{setsWon}</span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
-
+                        </div>
+                    );
+                })()}
 
             </div>
         </div>

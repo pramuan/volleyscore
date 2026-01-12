@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Management from './views/Management';
 import Controller from './views/Controller';
@@ -8,6 +9,28 @@ import PartialDisplay from './views/PartialDisplay';
 function App() {
   return (
     <BrowserRouter>
+      <Toaster
+        position="bottom-right"
+        reverseOrder={false}
+        toastOptions={{
+          success: {
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#333',
+            },
+          },
+          error: {
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={<Navigate to="/management" replace />} />
         <Route path="/management" element={<Management />} />

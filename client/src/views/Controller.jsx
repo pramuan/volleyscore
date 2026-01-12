@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight } from 'lucide-react';
 
 function Controller() {
     const { matchId } = useParams();
@@ -132,153 +132,130 @@ function Controller() {
             {/* Main Control Area */}
             <main className="flex-1 p-4 lg:p-8 flex flex-col lg:flex-row gap-4 lg:gap-8 max-w-7xl mx-auto w-full">
 
-                {/* Home Team Card */}
-                <div className="flex-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden flex flex-col relative transition-all ring-4 ring-transparent duration-300"
-                    style={match.servingTeam === 'home' ? { ringColor: '#3b82f6', boxShadow: '0 0 0 4px rgba(59, 130, 246, 0.3)' } : {}}>
+                {/* Dynamic Sides Render */}
+                {(() => {
+                    const leftTeamKey = (!match.leftSideTeam || match.leftSideTeam === 'home') ? 'home' : 'away';
+                    const rightTeamKey = leftTeamKey === 'home' ? 'away' : 'home';
+                    const sides = [leftTeamKey, rightTeamKey];
 
-                    {/* Service Toggle Area */}
-                    <button
-                        onClick={() => setServing('home')}
-                        className={`bg-gradient-to-r from-blue-600 to-blue-500 p-4 lg:p-6 text-white text-center w-full relative transition-colors ${match.servingTeam === 'home' ? 'brightness-110' : 'brightness-90 opacity-90'}`}
-                    >
-                        <h2 className="text-xl lg:text-2xl font-bold tracking-tight uppercase truncate drop-shadow-sm flex items-center justify-center gap-3">
-                            {match.servingTeam === 'home' && <CircleDot className="animate-pulse" />}
-                            {match.homeLogo ? (
-                                <img src={getFileUrl(match, match.homeLogo)} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" alt="" />
-                            ) : (
-                                <Shield className="w-6 h-6 opacity-50" />
-                            )}
-                            {match.homeTeam}
-                        </h2>
-                        {match.servingTeam === 'home' && <div className="absolute top-2 right-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">SERVING</div>}
-                    </button>
+                    return sides.map((teamKey, index) => {
+                        const isHome = teamKey === 'home';
+                        const teamName = isHome ? match.homeTeam : match.awayTeam;
+                        const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                        const score = isHome ? match.scores.home : match.scores.away;
+                        const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                        const isServing = match.servingTeam === teamKey;
+                        const state = isHome ? homeState : awayState;
+                        const color = isHome ? (match.config?.homeColor || '#3b82f6') : (match.config?.awayColor || '#ef4444');
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-12 relative">
-                        {/* Status Badge */}
-                        {homeState && (
-                            <div className={`absolute top-4 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase animate-pulse ${homeState === 'WON' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {homeState === 'WON' ? 'Set Won' : 'Set Point'}
-                            </div>
-                        )}
+                        return (
+                            <React.Fragment key={teamKey}>
+                                {/* Team Card */}
+                                <div className="flex-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden flex flex-col relative transition-all ring-4 ring-transparent duration-300"
+                                    style={isServing ? { ringColor: color, boxShadow: `0 0 0 4px ${color}4d` } : {}}>
 
-                        <div className="text-[12rem] lg:text-[14rem] leading-none font-bold text-slate-800 tracking-tighter tabular-nums">
-                            {match.scores.home}
-                        </div>
+                                    {/* Service Toggle Area */}
+                                    <button
+                                        onClick={() => setServing(teamKey)}
+                                        style={{ background: `linear-gradient(to right, ${color}, ${color}dd)` }}
+                                        className={`p-4 lg:p-6 text-white text-center w-full relative transition-colors ${isServing ? 'brightness-110' : 'brightness-90 opacity-90'}`}
+                                    >
+                                        <h2 className="text-xl lg:text-2xl font-bold tracking-tight uppercase truncate drop-shadow-sm flex items-center justify-center gap-3">
+                                            {isServing && <CircleDot className="animate-pulse" />}
+                                            {teamLogo ? (
+                                                <img src={getFileUrl(match, teamLogo)} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" alt="" />
+                                            ) : (
+                                                <Shield className="w-6 h-6 opacity-50" />
+                                            )}
+                                            {teamName}
+                                        </h2>
+                                        {isServing && <div className="absolute top-2 right-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">SERVING</div>}
+                                    </button>
 
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                            <button
-                                onClick={() => updateScore('home', 1)}
-                                className="h-32 bg-blue-500 hover:bg-blue-600 active:scale-95 transition-all rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center text-white"
-                            >
-                                <Plus size={56} strokeWidth={3} />
-                            </button>
-                            <button
-                                onClick={() => updateScore('home', -1)}
-                                className="h-32 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500"
-                            >
-                                <Minus size={40} strokeWidth={3} />
-                            </button>
-                        </div>
-                    </div>
-                    {/* Bottom Indicators */}
-                    <div className="bg-slate-50 p-4 border-t border-gray-100 flex justify-center">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-                            <span>SETS:</span>
-                            <span className="bg-blue-100 text-blue-700 px-3 py-0.5 rounded-full flex items-center gap-1">
-                                <Trophy size={14} />
-                                {match.sets.filter(s => s.winner === 'home').length}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                                    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-12 relative">
+                                        {/* Status Badge */}
+                                        {state && (
+                                            <div className={`absolute top-4 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase animate-pulse ${state === 'WON' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {state === 'WON' ? 'Set Won' : 'Set Point'}
+                                            </div>
+                                        )}
 
-                {/* VS Divider (Desktop) / Spacer (Mobile) */}
-                {/* VS Divider / Court Side Toggles */}
-                <div className="flex flex-col items-center justify-center gap-4 text-gray-300 font-black text-xs italic">
-                    <div className="text-3xl lg:text-4xl text-slate-300 transform -skew-x-12 mb-8">VS</div>
-                    <div className="flex flex-col gap-1 items-center">
-                        <span className="opacity-50 text-[10px] not-italic font-sans font-medium uppercase tracking-wider text-slate-400">Court Side</span>
-                        <button
-                            onClick={() => setCourtSide('home_left')}
-                            className={`p-2 rounded-lg transition-all ${(!match.leftSideTeam || match.leftSideTeam === 'home') ? 'bg-slate-800 text-white shadow-md scale-110' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}
-                            title="Home is Left"
-                        >
-                            <div className="flex gap-1 h-3 items-center">
-                                <div className="w-1 h-full bg-current rounded-full"></div>
-                                <div className="w-3 h-full border border-current rounded-sm opacity-50"></div>
-                            </div>
-                        </button>
-                        <button
-                            onClick={() => setCourtSide('away_left')}
-                            className={`p-2 rounded-lg transition-all ${match.leftSideTeam === 'away' ? 'bg-slate-800 text-white shadow-md scale-110' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}
-                            title="Away is Left"
-                        >
-                            <div className="flex gap-1 h-3 items-center flex-row-reverse">
-                                <div className="w-1 h-full bg-current rounded-full"></div>
-                                <div className="w-3 h-full border border-current rounded-sm opacity-50"></div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
+                                        <div className="text-[12rem] lg:text-[14rem] leading-none font-bold text-slate-800 tracking-tighter tabular-nums">
+                                            {score}
+                                        </div>
 
-                {/* Away Team Card */}
-                <div className="flex-1 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden flex flex-col relative transition-all ring-4 ring-transparent duration-300"
-                    style={match.servingTeam === 'away' ? { ringColor: '#ef4444', boxShadow: '0 0 0 4px rgba(239, 68, 68, 0.3)' } : {}}>
+                                        <div className="grid grid-cols-2 gap-4 w-full">
+                                            <button
+                                                onClick={() => updateScore(teamKey, 1)}
+                                                style={{ backgroundColor: color }}
+                                                className="h-32 hover:brightness-110 active:scale-95 transition-all rounded-2xl shadow-lg shadow-black/10 flex items-center justify-center text-white"
+                                            >
+                                                <Plus size={56} strokeWidth={3} />
+                                            </button>
+                                            <button
+                                                onClick={() => updateScore(teamKey, -1)}
+                                                className="h-32 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500"
+                                            >
+                                                <Minus size={40} strokeWidth={3} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {/* Bottom Indicators */}
+                                    <div className="bg-slate-50 p-4 border-t border-gray-100 flex justify-center">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+                                            <span>SETS:</span>
+                                            <span
+                                                style={{ color: color, backgroundColor: `${color}20` }}
+                                                className="px-3 py-0.5 rounded-full flex items-center gap-1"
+                                            >
+                                                <Trophy size={14} />
+                                                {setsWon}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <button
-                        onClick={() => setServing('away')}
-                        className={`bg-gradient-to-r from-red-600 to-red-500 p-4 lg:p-6 text-white text-center w-full relative transition-colors ${match.servingTeam === 'away' ? 'brightness-110' : 'brightness-90 opacity-90'}`}
-                    >
-                        <h2 className="text-xl lg:text-2xl font-bold tracking-tight uppercase truncate drop-shadow-sm flex items-center justify-center gap-3">
-                            {match.servingTeam === 'away' && <CircleDot className="animate-pulse" />}
-                            {match.awayLogo ? (
-                                <img src={getFileUrl(match, match.awayLogo)} className="w-8 h-8 object-contain bg-white rounded-full p-0.5" alt="" />
-                            ) : (
-                                <Shield className="w-6 h-6 opacity-50" />
-                            )}
-                            {match.awayTeam}
-                        </h2>
-                        {match.servingTeam === 'away' && <div className="absolute top-2 right-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">SERVING</div>}
-                    </button>
+                                {/* Divider / Controls (Only render after first element) */}
+                                {index === 0 && (
+                                    <div className="flex flex-col items-center justify-center gap-4 text-gray-300 font-black text-xs italic">
+                                        <div className="text-6xl lg:text-8xl text-slate-300 transform -skew-x-12 mb-8">VS</div>
+                                        <div className="flex flex-col gap-2 items-center">
+                                            <span className="opacity-60 text-sm not-italic font-sans font-black uppercase tracking-widest text-slate-400">SWAP</span>
+                                            <button
+                                                onClick={() => setCourtSide((!match.leftSideTeam || match.leftSideTeam === 'home') ? 'away_left' : 'home_left')}
+                                                className="p-4 rounded-2xl bg-slate-800 text-white shadow-lg hover:bg-slate-700 active:scale-95 transition-all flex flex-col items-center gap-2 group"
+                                                title="Switch Court Sides"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {/* Visual Court Representation */}
+                                                    {/* Left Bar */}
+                                                    <div className="w-3 h-8 border-2 border-white/50 rounded-sm transition-colors duration-300"
+                                                        style={{
+                                                            backgroundColor: (!match.leftSideTeam || match.leftSideTeam === 'home')
+                                                                ? (match.config?.homeColor || '#3b82f6') + '40'
+                                                                : (match.config?.awayColor || '#ef4444') + '40'
+                                                        }}>
+                                                    </div>
 
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-12 relative">
-                        {/* Status Badge */}
-                        {awayState && (
-                            <div className={`absolute top-4 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase animate-pulse ${awayState === 'WON' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {awayState === 'WON' ? 'Set Won' : 'Set Point'}
-                            </div>
-                        )}
+                                                    <ArrowLeftRight size={24} className="group-hover:scale-110 transition-transform duration-300" />
 
-                        <div className="text-[12rem] lg:text-[14rem] leading-none font-bold text-slate-800 tracking-tighter tabular-nums">
-                            {match.scores.away}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                            <button
-                                onClick={() => updateScore('away', 1)}
-                                className="h-32 bg-red-500 hover:bg-red-600 active:scale-95 transition-all rounded-2xl shadow-lg shadow-red-500/30 flex items-center justify-center text-white"
-                            >
-                                <Plus size={56} strokeWidth={3} />
-                            </button>
-                            <button
-                                onClick={() => updateScore('away', -1)}
-                                className="h-32 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500"
-                            >
-                                <Minus size={40} strokeWidth={3} />
-                            </button>
-                        </div>
-                    </div>
-                    {/* Bottom Indicators */}
-                    <div className="bg-slate-50 p-4 border-t border-gray-100 flex justify-center">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-                            <span>SETS:</span>
-                            <span className="bg-red-100 text-red-700 px-3 py-0.5 rounded-full flex items-center gap-1">
-                                <Trophy size={14} />
-                                {match.sets.filter(s => s.winner === 'away').length}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                                                    {/* Right Bar */}
+                                                    <div className="w-3 h-8 border-2 border-white/50 rounded-sm transition-colors duration-300"
+                                                        style={{
+                                                            backgroundColor: (!match.leftSideTeam || match.leftSideTeam === 'home')
+                                                                ? (match.config?.awayColor || '#ef4444') + '40'
+                                                                : (match.config?.homeColor || '#3b82f6') + '40'
+                                                        }}>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        );
+                    });
+                })()}
             </main>
 
             {/* Footer / Global Actions */}

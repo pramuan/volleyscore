@@ -1,7 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon } from 'lucide-react';
+import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone } from 'lucide-react';
+import toast from 'react-hot-toast';
 import PocketBase from 'pocketbase';
+import volleyballIcon from '../assets/volleyball_48.png';
 
 // Initialize PocketBase
 const pb = new PocketBase('http://127.0.0.1:8090');
@@ -17,6 +20,8 @@ function Management() {
         awayTeam: 'Away',
         bestOf: '3',
         setPoints: '25',
+        homeColor: '#1d4ed8', // Default Blue
+        awayColor: '#b91c1c', // Default Red
         homeLogo: null,
         awayLogo: null
     });
@@ -32,7 +37,10 @@ function Management() {
             });
             setMatches(records);
         } catch (error) {
-            console.error("Error fetching matches:", error);
+            if (!error.isAbort) {
+                console.error("Error fetching matches:", error);
+                toast.error("Failed to fetch matches.");
+            }
         } finally {
             setLoading(false);
         }
@@ -68,7 +76,9 @@ function Management() {
                 const configData = {
                     bestOf: parseInt(newMatchData.bestOf),
                     setPoints: parseInt(newMatchData.setPoints),
-                    tieBreakPoints: 15
+                    tieBreakPoints: 15,
+                    homeColor: newMatchData.homeColor,
+                    awayColor: newMatchData.awayColor
                 };
                 formData.append('config', JSON.stringify(configData));
 
@@ -84,8 +94,14 @@ function Management() {
                     formData.append('awayLogo', '');
                 }
 
+                if (newMatchData.backgroundImage instanceof File) {
+                    formData.append('backgroundImage', newMatchData.backgroundImage);
+                } else if (newMatchData.backgroundImage === 'DELETE') {
+                    formData.append('backgroundImage', '');
+                }
+
                 await pb.collection('volleyball_matches').update(editingMatchId, formData);
-                alert('Match updated successfully!');
+                toast.success('Match updated successfully!');
             } else {
                 // CREATE New Match
                 const formData = new FormData();
@@ -97,7 +113,9 @@ function Management() {
                 const configData = {
                     bestOf: parseInt(newMatchData.bestOf),
                     setPoints: parseInt(newMatchData.setPoints),
-                    tieBreakPoints: 15
+                    tieBreakPoints: 15,
+                    homeColor: newMatchData.homeColor,
+                    awayColor: newMatchData.awayColor
                 };
                 formData.append('config', JSON.stringify(configData));
 
@@ -117,8 +135,14 @@ function Management() {
                     formData.append('awayLogo', '');
                 }
 
+                if (newMatchData.backgroundImage instanceof File) {
+                    formData.append('backgroundImage', newMatchData.backgroundImage);
+                } else if (newMatchData.backgroundImage === 'DELETE') {
+                    formData.append('backgroundImage', '');
+                }
+
                 await pb.collection('volleyball_matches').create(formData);
-                alert('Match created successfully!');
+                toast.success('Match created successfully!');
             }
 
             setShowCreateModal(false);
@@ -129,12 +153,15 @@ function Management() {
                 awayTeam: 'Away',
                 bestOf: '3',
                 setPoints: '25',
+                homeColor: '',
+                awayColor: '',
                 homeLogo: null,
-                awayLogo: null
+                awayLogo: null,
+                backgroundImage: null
             });
 
         } catch (error) {
-            alert("Failed to save match: " + error.message);
+            toast.error("Failed to save match: " + error.message);
             console.error(error);
         }
     };
@@ -147,6 +174,8 @@ function Management() {
             awayTeam: 'Away',
             bestOf: '3',
             setPoints: '25',
+            homeColor: '',
+            awayColor: '',
             homeLogo: null,
             awayLogo: null
         });
@@ -166,21 +195,52 @@ function Management() {
             awayTeam: match.awayTeam,
             bestOf: match.config?.bestOf?.toString() || '3',
             setPoints: match.config?.setPoints?.toString() || '25',
+            homeColor: match.config?.homeColor || '',
+            awayColor: match.config?.awayColor || '',
             homeLogo: null, // Don't preload file objects
             awayLogo: null
         });
         setShowCreateModal(true);
     };
 
-    const handleDeleteMatch = async (matchId) => {
-        if (!window.confirm("Are you sure you want to delete this match? This cannot be undone.")) return;
-        try {
-            await pb.collection('volleyball_matches').delete(matchId);
-            // Realtime subscription will handle the UI update
-        } catch (error) {
-            console.error("Failed to delete match:", error);
-            alert("Error deleting match");
-        }
+    const handleDeleteMatch = (matchId) => {
+        toast((t) => (
+            <div className="flex flex-col gap-2">
+                <span className="font-medium text-sm">Delete this match?</span>
+                <div className="flex gap-2">
+                    <button
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-600 transition-colors"
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                await pb.collection('volleyball_matches').delete(matchId);
+                                toast.success('Match deleted');
+                            } catch (error) {
+                                console.error("Failed to delete:", error);
+                                toast.error("Error deleting match");
+                            }
+                        }}
+                    >
+                        Delete
+                    </button>
+                    <button
+                        className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300 transition-colors"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 4000,
+            position: 'top-center',
+            style: {
+                background: '#fff',
+                color: '#333',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                border: '1px solid #e2e8f0',
+            },
+        });
     };
 
     const handleGoLive = async (matchId) => {
@@ -198,17 +258,23 @@ function Management() {
 
             // Toggle target match
             await pb.collection('volleyball_matches').update(matchId, { is_live: isTurningOn });
+            toast.success(isTurningOn ? 'Match set live!' : 'Match taken offline.');
 
         } catch (error) {
             console.error("Failed to set live match:", error);
-            alert("Error setting live match");
+            toast.error("Error setting live match");
         }
     };
 
-    const copyLink = (path) => {
+    const copyLink = async (path) => {
         const url = `${window.location.protocol}//${window.location.host}${path}`;
-        navigator.clipboard.writeText(url);
-        alert(`Copied: ${url}`);
+        try {
+            await navigator.clipboard.writeText(url);
+            toast.success('Link copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            toast.error('Failed to copy link');
+        }
     };
 
     return (
@@ -217,9 +283,10 @@ function Management() {
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 p-2 rounded-lg text-white">
+                        {/* <div className="bg-blue-600 p-2 rounded-lg text-white">
                             <Monitor size={24} />
-                        </div>
+                        </div> */}
+                        <img src={volleyballIcon} alt="Logo" className="w-10 h-10 object-contain drop-shadow-md" />
                         <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-blue-500">
                             VolleyScore Manager
                         </h1>
@@ -252,9 +319,9 @@ function Management() {
                                     </div>
                                     <div className="flex items-center gap-4 text-slate-500 text-sm md:text-base font-medium">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-blue-600 font-bold">{match.homeTeam}</span>
+                                            <span className="font-bold" style={{ color: match.config?.homeColor || '#1d4ed8' }}>{match.homeTeam}</span>
                                             <span className="text-slate-300">vs</span>
-                                            <span className="text-red-600 font-bold">{match.awayTeam}</span>
+                                            <span className="font-bold" style={{ color: match.config?.awayColor || '#b91c1c' }}>{match.awayTeam}</span>
                                         </div>
                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                         <div className="flex gap-2 text-xs">
@@ -278,7 +345,7 @@ function Management() {
                                             onClick={() => handleGoLive(match.id)}
                                             className={`h-10 w-full flex items-center justify-center gap-2 px-3 rounded-lg font-bold text-sm transition-all shadow-sm border ${match.is_live ? 'bg-green-100 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200' : 'bg-white text-slate-600 border-slate-200 hover:border-green-500 hover:text-green-600 hover:shadow-md'}`}
                                         >
-                                            <div className={`w-2 h-2 rounded-full ${match.is_live ? 'bg-green-500 animate-pulse group-hover:bg-red-500' : 'bg-slate-300'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${match.is_live ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                                             {match.is_live ? 'Live (Stop)' : 'Set as Live'}
                                         </button>
                                     </div>
@@ -365,7 +432,7 @@ function Management() {
                             <div className="mt-6 border-t border-slate-100 pt-4">
                                 <button
                                     onClick={() => setExpandedMatchId(expandedMatchId === match.id ? null : match.id)}
-                                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors"
+                                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
                                 >
                                     {expandedMatchId === match.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     Broadcast Links (OBS/vMix)
@@ -374,9 +441,15 @@ function Management() {
                                 {expandedMatchId === match.id && (
                                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
                                         {/* Home Team Links */}
-                                        <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
-                                            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                        <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                                            <h4
+                                                className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
+                                                style={{ color: match.config?.homeColor || '#1d4ed8' }}
+                                            >
+                                                <div
+                                                    className="w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: match.config?.homeColor || '#1d4ed8' }}
+                                                ></div>
                                                 Home Team ({match.homeTeam})
                                             </h4>
                                             <div className="space-y-2">
@@ -386,11 +459,11 @@ function Management() {
                                                     { label: 'Sets Won', path: `/display/${match.id}/home/sets` },
                                                     { label: 'Logo', path: `/display/${match.id}/home/logo` },
                                                 ].map((link, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-blue-100 shadow-sm">
+                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
                                                         <span className="text-sm font-medium text-slate-600">{link.label}</span>
                                                         <button
                                                             onClick={() => copyLink(link.path)}
-                                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-md transition-colors"
+                                                            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
                                                             title="Copy Link"
                                                         >
                                                             <LinkIcon size={14} />
@@ -401,9 +474,15 @@ function Management() {
                                         </div>
 
                                         {/* Away Team Links */}
-                                        <div className="bg-red-50/50 rounded-xl p-4 border border-red-100">
-                                            <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                                            <h4
+                                                className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2"
+                                                style={{ color: match.config?.awayColor || '#b91c1c' }}
+                                            >
+                                                <div
+                                                    className="w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: match.config?.awayColor || '#b91c1c' }}
+                                                ></div>
                                                 Away Team ({match.awayTeam})
                                             </h4>
                                             <div className="space-y-2">
@@ -413,11 +492,11 @@ function Management() {
                                                     { label: 'Sets Won', path: `/display/${match.id}/away/sets` },
                                                     { label: 'Logo', path: `/display/${match.id}/away/logo` },
                                                 ].map((link, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-red-100 shadow-sm">
+                                                    <div key={idx} className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
                                                         <span className="text-sm font-medium text-slate-600">{link.label}</span>
                                                         <button
                                                             onClick={() => copyLink(link.path)}
-                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                                                            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-md transition-colors"
                                                             title="Copy Link"
                                                         >
                                                             <LinkIcon size={14} />
@@ -521,14 +600,31 @@ function Management() {
                                             value={newMatchData.homeTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, homeTeam: e.target.value })}
                                         />
-                                        <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <label className="block text-xs font-medium text-gray-500">Team Logo</label>
                                             <input
                                                 type="file"
                                                 accept="image/*"
-                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${newMatchData.homeLogo ? 'text-slate-500' : 'text-transparent'}`}
+                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.homeLogo ? 'text-slate-500' : 'text-transparent'}`}
                                                 onChange={e => setNewMatchData({ ...newMatchData, homeLogo: e.target.files[0] })}
                                             />
                                         </div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Team Color</label>
+                                        <div className="relative">
+                                            <input
+                                                type="color"
+                                                value={newMatchData.homeColor || '#1d4ed8'}
+                                                onChange={e => setNewMatchData({ ...newMatchData, homeColor: e.target.value })}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            />
+                                            <div
+                                                className="w-full text-xs py-2 px-4 rounded-full border-0 font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-start gap-2"
+                                            >
+                                                <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: newMatchData.homeColor || '#1d4ed8' }}></span>
+                                                <span>{newMatchData.homeColor ? newMatchData.homeColor : 'Select Color'}</span>
+                                            </div>
+                                        </div>
+
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         {/* Display Existing Away Logo if available and not being removed/replaced */}
@@ -573,14 +669,31 @@ function Management() {
                                             value={newMatchData.awayTeam}
                                             onChange={e => setNewMatchData({ ...newMatchData, awayTeam: e.target.value })}
                                         />
-                                        <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <label className="block text-xs font-medium text-gray-500">Team Logo</label>
                                             <input
                                                 type="file"
                                                 accept="image/*"
-                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 ${newMatchData.awayLogo ? 'text-slate-500' : 'text-transparent'}`}
+                                                className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.awayLogo ? 'text-slate-500' : 'text-transparent'}`}
                                                 onChange={e => setNewMatchData({ ...newMatchData, awayLogo: e.target.files[0] })}
                                             />
                                         </div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Team Color</label>
+                                        <div className="relative">
+                                            <input
+                                                type="color"
+                                                value={newMatchData.awayColor || '#b91c1c'}
+                                                onChange={e => setNewMatchData({ ...newMatchData, awayColor: e.target.value })}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            />
+                                            <div
+                                                className="w-full text-xs py-2 px-4 rounded-full border-0 font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center justify-start gap-2"
+                                            >
+                                                <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: newMatchData.awayColor || '#b91c1c' }}></span>
+                                                <span>{newMatchData.awayColor ? newMatchData.awayColor : 'Select Color'}</span>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
 
@@ -610,9 +723,59 @@ function Management() {
                                             </select>
                                         </div>
                                     </div>
-                                    <p className="text-[11px] text-gray-400 mt-2 italic">
+
+                                    <p className="text-[11px] text-gray-400 mt-2 mb-4 italic">
                                         * Includes 'Win by 2' rule and fixed 15-point tie-break.
                                     </p>
+
+                                    <div className="flex flex-col gap-2">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Scoreboard Background <span className="text-gray-400 font-normal text-xs">(1920 x 315 Pixel)</span>
+                                        </label>
+
+                                        {/* Existing Background Preview */}
+                                        {editingMatchId && matches.find(m => m.id === editingMatchId)?.backgroundImage &&
+                                            newMatchData.backgroundImage !== 'DELETE' &&
+                                            !(newMatchData.backgroundImage instanceof File) && (
+                                                <div className="mb-1 flex items-center gap-2">
+                                                    <img
+                                                        src={getFileUrl(matches.find(m => m.id === editingMatchId), matches.find(m => m.id === editingMatchId).backgroundImage)}
+                                                        alt="Current Background"
+                                                        className="w-16 h-10 object-cover bg-slate-900 rounded-md border border-slate-200"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setNewMatchData({ ...newMatchData, backgroundImage: 'DELETE' })}
+                                                        className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                                        title="Remove Background"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                        {/* Removed Background Indicator */}
+                                        {newMatchData.backgroundImage === 'DELETE' && (
+                                            <div className="mb-1 flex items-center gap-2 text-xs text-red-600 bg-red-50 px-2 py-1.5 rounded border border-red-100">
+                                                <Trash2 size={12} />
+                                                Background removed
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewMatchData({ ...newMatchData, backgroundImage: null })}
+                                                    className="ml-auto text-blue-600 hover:underline font-semibold"
+                                                >
+                                                    Undo
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className={`w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 ${newMatchData.backgroundImage ? 'text-slate-500' : 'text-transparent'}`}
+                                            onChange={e => setNewMatchData({ ...newMatchData, backgroundImage: e.target.files[0] })}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="pt-2">
@@ -624,8 +787,8 @@ function Management() {
                                     </button>
                                 </div>
                             </form>
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 )
             }
         </div >

@@ -55,6 +55,7 @@ sync.subscribeToChanges((record) => {
         awayTeam: record.awayTeam,
         homeLogo: record.homeLogo,
         awayLogo: record.awayLogo,
+        backgroundImage: record.backgroundImage,
         config: record.config
     });
 
