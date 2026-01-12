@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
 import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 function Controller() {
     const { matchId } = useParams();
@@ -55,15 +56,67 @@ function Controller() {
     };
 
     const startNewSet = () => {
-        if (confirm("Start a new set? Current scores will be archived.")) {
-            socket.emit('start_new_set', matchId);
-        }
+        toast((t) => (
+            <div className="flex flex-col gap-2">
+                <span className="font-bold text-sm">Start a New Set?</span>
+                <span className="text-xs text-gray-500">Current scores will be archived.</span>
+                <div className="flex gap-2 mt-1">
+                    <button
+                        className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-700 transition-colors"
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            socket.emit('start_new_set', matchId);
+                        }}
+                    >
+                        Confirm
+                    </button>
+                    <button
+                        className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-200 transition-colors"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 4000,
+            style: {
+                minWidth: '250px',
+            },
+        });
     };
 
     const resetMatch = () => {
-        if (confirm("RESET MATCH? This will clear all sets and scores.")) {
-            socket.emit('reset_match', matchId);
-        }
+        toast((t) => (
+            <div className="flex flex-col gap-2">
+                <span className="font-bold text-sm text-red-600">RESET MATCH?</span>
+                <span className="text-xs text-gray-500">This will CLEAR ALL scores and sets.</span>
+                <div className="flex gap-2 mt-1">
+                    <button
+                        className="bg-red-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-red-600 transition-colors"
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            socket.emit('reset_match', matchId);
+                            toast.success("Match has been reset.");
+                        }}
+                    >
+                        Yes, Reset Everything
+                    </button>
+                    <button
+                        className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-200 transition-colors"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 5000,
+            style: {
+                minWidth: '280px',
+                border: '1px solid #fee2e2'
+            },
+        });
     };
 
     const setServing = (team) => {
