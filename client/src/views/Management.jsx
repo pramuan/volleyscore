@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone, Tv, LogOut } from 'lucide-react';
+import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone, Tv, LogOut, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import pb from '../lib/pocketbase';
 import volleyballIcon from '../assets/volleyball_48.png';
@@ -176,22 +176,24 @@ function Management() {
 
             setShowCreateModal(false);
             setEditingMatchId(null);
+            // reset form
             setNewMatchData({
                 name: 'New Match',
                 homeTeam: 'Home',
                 awayTeam: 'Away',
-                bestOf: '3',
+                bestOf: '3', // Default to 3 sets
                 setPoints: '25',
-                homeColor: '',
-                awayColor: '',
+                homeColor: '#1d4ed8',
+                awayColor: '#b91c1c',
                 homeLogo: null,
                 awayLogo: null,
-                backgroundImage: null,
+                pin: '',
                 courtId: '1'
             });
+
         } catch (error) {
-            toast.error("Failed to save match: " + error.message);
-            console.error(error);
+            console.error("Error saving match:", error);
+            toast.error("Failed to save match.");
         }
     };
 
@@ -204,8 +206,8 @@ function Management() {
             awayTeam: 'Away',
             bestOf: '3',
             setPoints: '25',
-            homeColor: '',
-            awayColor: '',
+            homeColor: '#1d4ed8',
+            awayColor: '#b91c1c',
             homeLogo: null,
             awayLogo: null,
             pin: randomPin,
@@ -227,54 +229,27 @@ function Management() {
             awayTeam: match.awayTeam,
             bestOf: match.config?.bestOf?.toString() || '3',
             setPoints: match.config?.setPoints?.toString() || '25',
-            homeColor: match.config?.homeColor || '',
-            awayColor: match.config?.awayColor || '',
-            homeLogo: null, // Don't preload file objects
-            awayLogo: null,
+            homeColor: match.config?.homeColor || '#1d4ed8',
+            awayColor: match.config?.awayColor || '#b91c1c',
+            homeLogo: match.homeLogo, // Keep existing filename or obj
+            awayLogo: match.awayLogo,
             pin: match.pin || '',
             courtId: match.config?.courtId || '1'
         });
         setShowCreateModal(true);
     };
 
-    const handleDeleteMatch = (matchId) => {
-        toast((t) => (
-            <div className="flex flex-col gap-2">
-                <span className="font-medium text-sm">Delete this match?</span>
-                <div className="flex gap-2">
-                    <button
-                        className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-600 transition-colors"
-                        onClick={async () => {
-                            toast.dismiss(t.id);
-                            try {
-                                await pb.collection('volleyball_matches').delete(matchId);
-                                toast.success('Match deleted');
-                            } catch (error) {
-                                console.error("Failed to delete:", error);
-                                toast.error("Error deleting match");
-                            }
-                        }}
-                    >
-                        Delete
-                    </button>
-                    <button
-                        className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300 transition-colors"
-                        onClick={() => toast.dismiss(t.id)}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        ), {
-            duration: 4000,
-            position: 'top-center',
-            style: {
-                background: '#fff',
-                color: '#333',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                border: '1px solid #e2e8f0',
-            },
-        });
+    const handleDeleteMatch = async (id) => {
+        if (window.confirm('Are you sure you want to delete this match?')) {
+            try {
+                await pb.collection('volleyball_matches').delete(id);
+                toast.success('Match deleted!');
+                // Realtime subscription will remove it from list
+            } catch (error) {
+                console.error("Error deleting match:", error);
+                toast.error("Failed to delete match.");
+            }
+        }
     };
 
     const handleGoLive = async (matchId) => {
@@ -328,6 +303,57 @@ function Management() {
         navigate('/login');
     };
 
+    const exportMatchesToCSV = () => {
+        if (!matches || matches.length === 0) {
+            toast.error("No matches to export.");
+            return;
+        }
+
+        try {
+            const headers = ["Match ID", "Name", "Date Created", "Home Team", "Away Team", "Court", "Current Set", "Winner", "Home Score", "Away Score", "Sets (Home)", "Sets (Away)", "Set Details"];
+
+            const rows = matches.map(m => {
+                const homeSets = m.sets?.filter(s => s.winner === 'home').length || 0;
+                const awaySets = m.sets?.filter(s => s.winner === 'away').length || 0;
+
+                // Format set details (e.g., "Set 1: 25-20; Set 2: 23-25")
+                const setDetails = m.sets?.map((s, i) =>
+                    `Set ${i + 1}: ${s.home}-${s.away}`
+                ).join("; ") || "";
+
+                return [
+                    m.id,
+                    `"${m.name.replace(/"/g, '""')}"`, // Escape quotes
+                    new Date(m.created).toLocaleString(),
+                    `"${m.homeTeam.replace(/"/g, '""')}"`,
+                    `"${m.awayTeam.replace(/"/g, '""')}"`,
+                    m.config?.courtId || "1",
+                    m.currentSet || 1,
+                    m.winner || "In Progress",
+                    m.scores?.home || 0,
+                    m.scores?.away || 0,
+                    homeSets,
+                    awaySets,
+                    `"${setDetails}"`
+                ].join(",");
+            });
+
+            const csvContent = [headers.join(","), ...rows].join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `volleyscore_matches_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toast.success("Exported matches to CSV!");
+        } catch (error) {
+            console.error("Export error:", error);
+            toast.error("Failed to export matches. Please try again.");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
             {/* Header */}
@@ -345,13 +371,21 @@ function Management() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={openCreateModal}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-full hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/30 font-semibold"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
                         >
-                            <Plus size={20} /> New Match
+                            <Plus size={18} />
+                            New Match
+                        </button>
+                        <button
+                            onClick={exportMatchesToCSV}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-colors text-sm"
+                        >
+                            <Download size={18} />
+                            Export CSV
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
+                            className="text-red-600 font-medium px-4 py-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors flex items-center gap-2"
                         >
                             <LogOut size={18} />
                             Logout

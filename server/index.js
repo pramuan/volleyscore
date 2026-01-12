@@ -105,8 +105,8 @@ io.on('connection', (socket) => {
         const updatedMatch = state.updateScore(matchId, team, delta);
         if (updatedMatch) {
             io.to(matchId).emit('match_update', updatedMatch);
-            // We don't sync on every score update for performance, rely on memory
-            // Optional: debounce sync here if critical
+            // SYNC: Save score changes to PocketBase immediately
+            sync.saveMatch(updatedMatch);
         }
     });
 
@@ -124,6 +124,8 @@ io.on('connection', (socket) => {
         const updatedMatch = state.setServingTeam(matchId, team);
         if (updatedMatch) {
             io.to(matchId).emit('match_update', updatedMatch);
+            // SYNC: Save serving team changes
+            sync.saveMatch(updatedMatch);
         }
     });
 
