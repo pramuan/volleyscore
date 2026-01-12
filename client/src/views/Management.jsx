@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone, Tv } from 'lucide-react';
+import { Copy, Plus, Monitor, Trophy, Edit, Trash2, ChevronDown, ChevronUp, Link as LinkIcon, Upload, Video, ExternalLink, RefreshCw, Smartphone, Tv, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import pb from '../lib/pocketbase';
 import volleyballIcon from '../assets/volleyball_48.png';
@@ -59,7 +59,19 @@ function Management() {
         // Subscribe to realtime changes in the matches collection
         pb.collection('volleyball_matches').subscribe('*', function (e) {
             console.log("Realtime update:", e.action, e.record);
-            fetchMatches();
+
+            setMatches(prevMatches => {
+                switch (e.action) {
+                    case 'create':
+                        return [e.record, ...prevMatches];
+                    case 'update':
+                        return prevMatches.map(m => m.id === e.record.id ? e.record : m);
+                    case 'delete':
+                        return prevMatches.filter(m => m.id !== e.record.id);
+                    default:
+                        return prevMatches;
+                }
+            });
         });
 
         return () => {
@@ -339,8 +351,9 @@ function Management() {
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
                         >
+                            <LogOut size={18} />
                             Logout
                         </button>
                     </div>

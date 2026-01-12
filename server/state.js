@@ -36,7 +36,8 @@ class VolleyState {
       scores: { home: 0, away: 0 },
       servingTeam: null,
       winner: null,
-      config: matchConfig
+      config: matchConfig,
+      lastActive: Date.now() // Track for cleanup
     };
     this.matches.push(newMatch);
     if (!this.activeMatchId) {
@@ -69,6 +70,7 @@ class VolleyState {
     if (match.scores.home < 0) match.scores.home = 0;
     if (match.scores.away < 0) match.scores.away = 0;
 
+    match.lastActive = Date.now();
     return match;
   }
 
@@ -76,7 +78,7 @@ class VolleyState {
     const index = this.matches.findIndex(m => m.id === matchId);
     if (index === -1) return null;
 
-    this.matches[index] = { ...this.matches[index], ...data };
+    this.matches[index] = { ...this.matches[index], ...data, lastActive: Date.now() };
     return this.matches[index];
   }
 
@@ -129,6 +131,7 @@ class VolleyState {
       match.servingTeam = null;
     }
 
+    match.lastActive = Date.now();
     return match;
   }
 
@@ -136,6 +139,7 @@ class VolleyState {
     const match = this.getMatch(matchId);
     if (!match) return null;
     match.servingTeam = team;
+    match.lastActive = Date.now();
     return match;
   }
 
@@ -149,7 +153,25 @@ class VolleyState {
     match.servingTeam = null;
     match.winner = null;
 
+    match.lastActive = Date.now();
     return match;
+  }
+
+  cleanupMatches() {
+    const NOW = Date.now();
+    const TIMEOUT = 24 * 60 * 60 * 1000; // 24 Hours
+    const initialCount = this.matches.length;
+
+    this.matches = this.matches.filter(m => {
+      // Keep if active recently
+      const lastActive = m.lastActive || 0;
+      return (NOW - lastActive) < TIMEOUT;
+    });
+
+    const removedCount = initialCount - this.matches.length;
+    if (removedCount > 0) {
+      console.log(`[Memory Cleanup] Removed ${removedCount} inactive matches from RAM.`);
+    }
   }
 }
 

@@ -151,6 +151,12 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 3000;
+
+// Schedule Cleanup Task (Every 1 hour)
+setInterval(() => {
+    state.cleanupMatches();
+}, 60 * 60 * 1000);
+
 server.listen(PORT, '0.0.0.0', () => {
     const ip = getLocalIp();
     console.log(`Server running on port ${PORT}`);
