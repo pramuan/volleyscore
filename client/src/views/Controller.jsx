@@ -303,6 +303,7 @@ function Controller() {
                 <div className="flex flex-col items-center">
                     <h1 className="font-bold text-gray-800 text-lg leading-tight">{match.name}</h1>
                     <div className="flex items-center gap-2 text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+                        <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Court {match.config?.courtId || '1'}</span>
                         <span>Set {match.currentSet}</span>
                         <span className="text-gray-300">•</span>
                         <span>Best of {bestOf}</span>
