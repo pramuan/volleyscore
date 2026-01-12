@@ -24,6 +24,7 @@ function Management() {
         pin: ''
     });
     const [expandedMatchId, setExpandedMatchId] = useState(null);
+    const [serverIp, setServerIp] = useState(null); // Store server IP
     const navigate = useNavigate();
 
     // Fetch matches from PocketBase
@@ -47,6 +48,12 @@ function Management() {
     useEffect(() => {
         fetchMatches();
         document.title = 'VolleyScore Manager';
+
+        // Fetch Server IP
+        fetch(`${window.location.protocol}//${window.location.hostname}:3000/api/ip`)
+            .then(res => res.json())
+            .then(data => setServerIp(data.ip))
+            .catch(err => console.error("Failed to fetch server IP:", err));
 
         // Subscribe to realtime changes in the matches collection
         pb.collection('volleyball_matches').subscribe('*', function (e) {
@@ -277,7 +284,10 @@ function Management() {
     };
 
     const copyLink = async (path) => {
-        const url = `${window.location.protocol}//${window.location.host}${path}`;
+        // Use server IP if available, otherwise fallback to current host
+        const host = serverIp ? `${serverIp}:${window.location.port}` : window.location.host;
+        const url = `${window.location.protocol}//${host}${path}`;
+
         try {
             await navigator.clipboard.writeText(url);
             toast.success('Link copied to clipboard!');

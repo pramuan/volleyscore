@@ -13,7 +13,7 @@ function Display() {
         if (!record || !filename) return null;
         // Fallback to specific collection ID string if record.collectionId is missing (e.g. from older state)
         const collectionId = record.collectionId || 'volleyball_matches';
-        return `http://127.0.0.1:8090/api/files/${collectionId}/${record.id}/${filename}`;
+        return `http://${window.location.hostname}:8090/api/files/${collectionId}/${record.id}/${filename}`;
     };
 
     useEffect(() => {

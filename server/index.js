@@ -31,6 +31,10 @@ function getLocalIp() {
     return 'localhost';
 }
 
+app.get('/api/ip', (req, res) => {
+    res.json({ ip: getLocalIp() });
+});
+
 // REST API for initial load or management
 app.get('/api/matches', (req, res) => {
     res.json(state.getAllMatches());

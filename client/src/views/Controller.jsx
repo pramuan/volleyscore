@@ -17,7 +17,7 @@ function Controller() {
 
     const getFileUrl = (record, filename) => {
         if (!record || !filename) return null;
-        return `http://127.0.0.1:8090/api/files/${record.collectionId}/${record.id}/${filename}`;
+        return `http://${window.location.hostname}:8090/api/files/${record.collectionId}/${record.id}/${filename}`;
     };
 
     useEffect(() => {
