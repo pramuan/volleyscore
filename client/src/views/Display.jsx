@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Trophy, CircleDot } from 'lucide-react';
+import { Trophy, CircleDot, Timer } from 'lucide-react';
 import volleyBallIcon from '../assets/volleyball_48.png';
 import { socket } from '../socket';
 
@@ -174,68 +174,83 @@ function Display({ forcedMatchId }) {
                 {/* Center Scoreboard */}
                 <div className={`flex items-center px-8 py-4 min-w-[380px] justify-center relative gap-8 ${match.backgroundImage ? 'bg-black/60 backdrop-blur-sm' : 'bg-black'}`}>
 
-                    {/* Left Score & Sets */}
-                    {(() => {
-                        const teamKey = leftTeamKey;
-                        const isHome = teamKey === 'home';
-                        const score = isHome ? match.scores.home : match.scores.away;
-                        const setsWon = match.sets.filter(s => s.winner === teamKey).length;
-                        const teamLogo = isHome ? match.homeLogo : match.awayLogo;
-                        const color = getTeamColor(teamKey);
-
-                        return (
-                            <div className="flex flex-col items-center gap-1">
-                                <div
-                                    className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
-                                >
-                                    {score}
-                                </div>
-                                {teamLogo && (
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
-                                        <span
-                                            className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
-                                        >
-                                            {setsWon}
-                                        </span>
-                                    </div>
-                                )}
+                    {/* Timeout Display OR Scores */}
+                    {match.timeout?.active ? (
+                        <div className="flex flex-col items-center justify-center w-full animate-in zoom-in duration-300">
+                            <div className="flex items-center gap-3 text-amber-500 animate-pulse mb-1">
+                                <Timer size={28} />
+                                <span className="font-bold tracking-widest uppercase text-sm">Timeout</span>
                             </div>
-                        );
-                    })()}
-
-                    {/* Divider */}
-                    <div className="h-24 w-px bg-slate-800" />
-
-                    {/* Right Score & Sets */}
-                    {(() => {
-                        const teamKey = rightTeamKey;
-                        const isHome = teamKey === 'home';
-                        const score = isHome ? match.scores.home : match.scores.away;
-                        const setsWon = match.sets.filter(s => s.winner === teamKey).length;
-                        const teamLogo = isHome ? match.homeLogo : match.awayLogo;
-                        const color = getTeamColor(teamKey);
-
-                        return (
-                            <div className="flex flex-col items-center gap-1">
-                                <div
-                                    className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
-                                >
-                                    {score}
-                                </div>
-                                {teamLogo && (
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
-                                        <span
-                                            className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
-                                        >
-                                            {setsWon}
-                                        </span>
-                                    </div>
-                                )}
+                            <div className="text-7xl font-mono font-bold tabular-nums leading-none text-white drop-shadow-lg">
+                                <CountdownTimer startTime={match.timeout.startTime} duration={match.timeout.duration} />
                             </div>
-                        );
-                    })()}
+                        </div>
+                    ) : (
+                        <>
+                            {/* Left Score & Sets */}
+                            {(() => {
+                                const teamKey = leftTeamKey;
+                                const isHome = teamKey === 'home';
+                                const score = isHome ? match.scores.home : match.scores.away;
+                                const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                                const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                                const color = getTeamColor(teamKey);
+
+                                return (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div
+                                            className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
+                                        >
+                                            {score}
+                                        </div>
+                                        {teamLogo && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                                <span
+                                                    className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
+                                                >
+                                                    {setsWon}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Divider */}
+                            <div className="h-24 w-px bg-slate-800" />
+
+                            {/* Right Score & Sets */}
+                            {(() => {
+                                const teamKey = rightTeamKey;
+                                const isHome = teamKey === 'home';
+                                const score = isHome ? match.scores.home : match.scores.away;
+                                const setsWon = match.sets.filter(s => s.winner === teamKey).length;
+                                const teamLogo = isHome ? match.homeLogo : match.awayLogo;
+                                const color = getTeamColor(teamKey);
+
+                                return (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div
+                                            className="text-8xl font-mono font-bold w-[2.5ch] text-center tabular-nums leading-none transition-colors duration-300"
+                                        >
+                                            {score}
+                                        </div>
+                                        {teamLogo && (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-0.5">Sets</span>
+                                                <span
+                                                    className="text-3xl font-bold tabular-nums leading-none transition-colors duration-300"
+                                                >
+                                                    {setsWon}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </>
+                    )}
                 </div>
 
                 {/* Right Team Panel */}
@@ -278,9 +293,27 @@ function Display({ forcedMatchId }) {
                     );
                 })()}
 
+
+
             </div>
         </div>
     );
+}
+
+// Sub-component for efficient countdown rendering
+function CountdownTimer({ startTime, duration }) {
+    const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.ceil((duration - (Date.now() - startTime)) / 1000)));
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const remaining = Math.max(0, Math.ceil((duration - (Date.now() - startTime)) / 1000));
+            setTimeLeft(remaining);
+            if (remaining <= 0) clearInterval(interval);
+        }, 100);
+        return () => clearInterval(interval);
+    }, [startTime, duration]);
+
+    return timeLeft;
 }
 
 export default Display;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2 } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2, Timer, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Controller() {
@@ -97,6 +97,16 @@ function Controller() {
     const handleUndo = () => {
         socket.emit('undo', matchId);
         toast.success("Action Undone");
+    };
+
+    const toggleTimeout = () => {
+        if (match.timeout?.active) {
+            socket.emit('stop_timeout', matchId);
+            toast.success("Timeout Cancelled");
+        } else {
+            socket.emit('start_timeout', matchId);
+            toast.success("Timeout Started");
+        }
     };
 
     const startNewSet = () => {
@@ -472,6 +482,13 @@ function Controller() {
                     onClick={handleUndo}
                 >
                     <Undo2 size={20} /> Undo
+                </button>
+                <button
+                    className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-2 ${match.timeout?.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                    onClick={toggleTimeout}
+                >
+                    {match.timeout?.active ? <X size={20} /> : <Timer size={20} />}
+                    {match.timeout?.active ? 'Stop' : 'Timeout'}
                 </button>
                 <button
                     className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"

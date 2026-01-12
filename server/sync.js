@@ -36,7 +36,10 @@ class VolleySync {
                 scores: record.scores || { home: 0, away: 0 },
                 config: record.config || { bestOf: 3, setPoints: 25, tieBreakPoints: 15 },
                 winner: null, // Computed runtime, or store if needed
-                servingTeam: null // Runtime only
+                servingTeam: null, // Runtime only
+                history: [], // Initialize empty history
+                timeout: { active: false, startTime: 0, duration: 30000 }, // Initialize timeout state
+                lastActive: Date.now() // Set active timestamp
             };
         } catch (err) {
             console.error(`Sync: Failed to hydrate match ${matchId}`, err.message);

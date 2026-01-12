@@ -154,6 +154,32 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('start_timeout', (matchId) => {
+        const updatedMatch = state.startTimeout(matchId);
+        if (updatedMatch) {
+            io.to(matchId).emit('match_update', updatedMatch);
+
+            // Auto-stop after 30 seconds
+            setTimeout(() => {
+                const match = state.getMatch(matchId);
+                // Only stop if it's still active and hasn't been reset/restarted
+                if (match && match.timeout.active && (Date.now() - match.timeout.startTime >= 30000)) {
+                    const stoppedMatch = state.stopTimeout(matchId);
+                    if (stoppedMatch) {
+                        io.to(matchId).emit('match_update', stoppedMatch);
+                    }
+                }
+            }, 30500); // 30.5 seconds buffer
+        }
+    });
+
+    socket.on('stop_timeout', (matchId) => {
+        const updatedMatch = state.stopTimeout(matchId);
+        if (updatedMatch) {
+            io.to(matchId).emit('match_update', updatedMatch);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
