@@ -223,7 +223,7 @@ function Controller() {
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Controller Locked</h2>
                     <p className="text-gray-500 mb-6 text-sm">Enter the 4-digit PIN to access score controls for <strong>{match.name}</strong>.</p>
 
-                    <form onSubmit={handlePinSubmit} className="space-y-4">
+                    <form onSubmit={handlePinSubmit} className="flex flex-col gap-4 w-fit mx-auto">
                         <div className="flex gap-3 justify-center">
                             {[0, 1, 2, 3].map((index) => (
                                 <input
