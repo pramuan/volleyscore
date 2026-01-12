@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { socket } from '../socket';
-import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2, Timer, X } from 'lucide-react';
+import { ChevronLeft, Plus, Minus, RotateCcw, CircleDot, Trophy, Shield, ArrowLeftRight, Undo2, Timer, X, StepForward, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Controller() {
@@ -472,16 +472,11 @@ function Controller() {
             {/* Footer / Global Actions */}
             <footer className="p-4 lg:p-8 flex justify-center gap-4 max-w-lg mx-auto w-full">
                 <button
-                    className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-all shadow-sm ${anySetWon ? 'bg-green-600 text-white hover:bg-green-700 animate-bounce' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
+                    className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-all shadow-sm whitespace-nowrap flex items-center justify-center gap-2 ${anySetWon ? 'bg-green-600 text-white hover:bg-green-700 animate-bounce' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
                     onClick={startNewSet}
                 >
-                    {anySetWon ? 'Confirm Set & Next' : 'New Set'}
-                </button>
-                <button
-                    className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
-                    onClick={handleUndo}
-                >
-                    <Undo2 size={20} /> Undo
+                    {anySetWon ? <Check size={20} /> : <StepForward size={20} />}
+                    {anySetWon ? 'Confirm Set' : 'New Set'}
                 </button>
                 <button
                     className={`flex-1 py-3 px-6 rounded-xl font-bold active:scale-95 transition-colors flex items-center justify-center gap-2 ${match.timeout?.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
@@ -489,6 +484,12 @@ function Controller() {
                 >
                     {match.timeout?.active ? <X size={20} /> : <Timer size={20} />}
                     {match.timeout?.active ? 'Stop' : 'Timeout'}
+                </button>
+                <button
+                    className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
+                    onClick={handleUndo}
+                >
+                    <Undo2 size={20} /> Undo
                 </button>
                 <button
                     className="flex-1 py-3 px-6 rounded-xl bg-slate-200 text-slate-600 font-bold hover:bg-slate-300 active:scale-95 transition-colors flex items-center justify-center gap-2"
